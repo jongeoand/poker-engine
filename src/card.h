@@ -29,6 +29,7 @@ typedef enum {
 	ACE
 } Rank;
 
+// 1 byte representation of a card
 typedef struct {
 	uint8_t suit : 4;
 	uint8_t rank : 4;
