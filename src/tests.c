@@ -224,7 +224,10 @@ void test(void) {
 		HandTypeRange bluffs = aheadof(&game, 0);
 		
 		printf("Hands Hero Beats: \n");
-		output_htr(&bluffs); printf("\n");
+		output_htr(&bluffs); printf("\n\n");
+
+		HandTypeRange straight = straight_draws(&game, 0);
+		output_htr(&straight); printf("\n\n");
 	
 		printf("Hands better than Hero: \n");
 		output_htr(&value); printf("\n");
