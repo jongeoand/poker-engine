@@ -26,8 +26,4 @@ void deal_bomb(Game* game);
 // deals an entire hand - all players receive cards and all three streets are dealt
 void deal_hand(Game* game);
 
-void print_playerhands(Game* game);
-
-// prints player i's perspective / "mental model"
-void print_playerpov(Game* game, int i);
 #endif

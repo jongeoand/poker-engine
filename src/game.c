@@ -50,23 +50,3 @@ void deal_hand(Game* game) {
 		print_playerhands(game); printf("\n");
 	}
 }
-
-void print_playerhands(Game* game) {
-	for (int i = 0; i < game->headcount; i++) {
-		Combo hand = game->playerhands[i];
-		uint64_t mask = combo_toBitmask(hand);
-
-		printf(" Player %d: ", i);
-		output_combo(hand); printf(" ");
-		printf("0x%08X  ", calculate_hand_strength(game->board | mask));
-		output_hand_rank(classify_hand(game->board | mask)); printf("\n");
-	}
-}
-
-void print_playerpov(Game* game, int i) {
-	Combo hand = game->playerhands[i];
-
-	HandTypeRange fullhtr = htr_full();
-	HtrEquitySplit matchups = htr_vs_combo(game->board, combo_toBitmask(hand), &fullhtr);
-	output_htr_equity_split(&matchups);
-}
