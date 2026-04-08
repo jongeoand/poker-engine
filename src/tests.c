@@ -225,10 +225,17 @@ void test(void) {
 		
 		printf("Hands Hero Beats: \n");
 		output_htr(&bluffs); printf("\n\n");
-
+		
+		printf("OESD / Gutshots: \n");
 		HandTypeRange straight = straight_draws(&game, 0);
 		output_htr(&straight); printf("\n\n");
-	
+		
+		if (s == 0) {
+			printf("Backdoor straight draws: \n");
+			HandTypeRange backdoors = backdoor_straights(&game, 0);
+			output_htr(&backdoors); printf("\n\n");
+		} 
+
 		printf("Hands better than Hero: \n");
 		output_htr(&value); printf("\n");
 	}	

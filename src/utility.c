@@ -31,3 +31,10 @@ HandTypeRange straight_draws(Game* game, int i) {
 	draws = htrfilter_by_draw(&draws, game->board, drawflags);
 	return draws;
 }
+
+HandTypeRange backdoor_straights(Game* game, int i) {
+	HandTypeRange backdoors = aheadof(game, i);
+
+	backdoors = htrfilter_by_draw(&backdoors, game->board, DRAW_BACKDOOR_STRAIGHT);
+	return backdoors;
+}

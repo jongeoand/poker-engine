@@ -8,4 +8,6 @@ HandTypeRange aheadof(Game* game, int i);
 HandTypeRange behind(Game* game, int i);
 
 HandTypeRange straight_draws(Game* game, int i);
+
+HandTypeRange backdoor_straights(Game* game, int i);
 #endif
