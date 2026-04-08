@@ -26,4 +26,5 @@ void deal_bomb(Game* game);
 // deals an entire hand - all players receive cards and all three streets are dealt
 void deal_hand(Game* game);
 
+int get_street(Game* game);
 #endif

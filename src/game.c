@@ -48,3 +48,15 @@ void deal_hand(Game* game) {
 		output_board(game->board); printf("\n");
 	}
 }
+
+int get_street(Game* game) {
+	int card_count = __builtin_popcountll(game->board);
+
+	if (card_count > 0) {
+		if (card_count == 3) { return 1; } // flop
+		if (card_count == 4) { return 2; } // turn
+		if (card_count == 5) { return 3; } // river
+	}
+
+	return 0; // preflop
+}
