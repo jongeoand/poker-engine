@@ -8,6 +8,7 @@
 #include "range.c"
 #include "output.c"
 #include "game.c"
+#include "utility.c"
 #include "tests.c"
 
 void print_file(const char* filename) {

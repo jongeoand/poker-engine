@@ -8,6 +8,7 @@
 #include "range.h"
 #include "output.h"
 #include "game.h"
+#include "utility.h"
 
 // --- Automated tests ---
 void print_struct_sizes(void);

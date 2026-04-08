@@ -221,47 +221,33 @@ void test_handtype_range(void) {
 
 void test(void) {
 	Game game = make_game(6);
+	deal_players(&game);
+		
+	HandTypeRange range = htr_full();
+	output_htr(&range); printf("\n");
+	
+	Combo hero = game.playerhands[0];
+	printf("Hero: "); output_combo(hero);
+	printf("----------------------------\n");
 
-	deal_players(&game);
-	deal_street(&game);
-	
-	output_board(game.board); printf("\n");
-	print_playerhands(&game); printf("\n");
-		
-	printf("----------------\n\n");
-		
-	game = make_game(6);
-	deal_players(&game);
-		
-	HandTypeRange htr = htr_full();
-	printf("Full HandTypeRange: \n");
-	printf("----------------------\n");
-	output_htr(&htr); printf("\n");
-	
-	for(int i = 0; i < 3; i++) {
+	for (int s = 0; s < 3; s++) {
 		deal_street(&game);
-		output_board(game.board); printf("\n");
-		print_playerhands(&game); printf("\n");
+		output_board(game.board); printf("\n");	
+		printf("Hero: "); output_combo(hero); printf("\n\n\n");
 		
-		Combo hero = game.playerhands[0];
-		HtrEquitySplit htres = htr_vs_combo(game.board, combo_toBitmask(hero), &htr);
-		output_htr_equity_split(&htres); printf("\n");					
-	}
-
-	printf("\n\n\n");
-
-	game = make_game(8);
-	deal_bomb(&game);
-
-	output_board(game.board); printf("\n");
-	print_playerhands(&game); printf("\n");
-
-	for (int i = 0; i < game.headcount; i++) {
-		printf("Player %d Mental Model\n", i);
-		printf("----------------------------------\n");
+		HandTypeRange value = behind(&game, 0);
+		HandTypeRange bluffs = aheadof(&game, 0);
+		HtrBoardProfile overview = profile(&bluffs, &game);	
 		
-		print_playerpov(&game, i);	
-	}
+		printf("Hands Hero Beats: \n");
+		output_htr(&bluffs); printf("\n");
+		output_htr_board_profile(&overview); printf("\n\n");
+	
+		printf("Hands better than Hero: \n");
+		output_htr(&value); printf("\n");
+		overview = profile(&value, &game);
+		output_htr_board_profile(&overview); printf("\n\n");
+	}	
 } 
 
 void test_alt(void) {	
