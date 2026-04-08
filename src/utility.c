@@ -19,7 +19,3 @@ HandTypeRange behind(Game* game, int i) {
 	return htrfilter_behind(game->board, bitmask, &range);
 }
 
-// Profile the range against the current game board
-HtrBoardProfile profile(const HandTypeRange* range, Game* game) {
-	return htr_board_profile(range, game->board);
-}

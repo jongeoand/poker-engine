@@ -202,21 +202,6 @@ void test_handtype_range(void) {
 	printf("  full - pairs:     %d\n",   htr_count(&no_pairs));
 	HandTypeRange inter = htr_intersect(&pairs_only, &no_pairs);
 	printf("  intersect:        %d\n\n", htr_count(&inter));
-
-	// ---- Board profile: Q82 rainbow ----
-	uint64_t board = toBitmask((Card){SPADE, QUEEN})
-	               | toBitmask((Card){DIAMOND, EIGHT})
-	               | toBitmask((Card){CLUB, TWO});
-	printf("Board: "); output_board(board); printf("\n");
-	HtrBoardProfile prof = htr_board_profile(&full, board);
-	output_htr_board_profile(&prof);
-
-	// ---- Subset: big pairs (AA-TT) ----
-	printf("\nBig pairs (AA-TT):\n");
-	HandTypeRange big_pairs = htr_empty();
-	for (int r = TEN; r <= ACE; r++) htr_add(&big_pairs, make_pair((uint8_t)r));
-	printf("  %d types, %d max combos\n", htr_count(&big_pairs), htr_combo_count_max(&big_pairs));
-	output_htr(&big_pairs);
 }
 
 void test(void) {
@@ -237,15 +222,11 @@ void test(void) {
 		
 		HandTypeRange value = behind(&game, 0);
 		HandTypeRange bluffs = aheadof(&game, 0);
-		HtrBoardProfile overview = profile(&bluffs, &game);	
 		
 		printf("Hands Hero Beats: \n");
 		output_htr(&bluffs); printf("\n");
-		output_htr_board_profile(&overview); printf("\n\n");
 	
 		printf("Hands better than Hero: \n");
 		output_htr(&value); printf("\n");
-		overview = profile(&value, &game);
-		output_htr_board_profile(&overview); printf("\n\n");
 	}	
 } 
