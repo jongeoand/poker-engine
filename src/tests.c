@@ -238,5 +238,5 @@ void test(void) {
 
 		printf("Hands better than Hero: \n");
 		output_htr(&value); printf("\n");
-	}	
+	}
 } 
