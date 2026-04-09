@@ -2,9 +2,7 @@
 #define OUTPUT_H_
 
 #include <stdio.h>
-#include "card.h"
-#include "engine.h"
-#include "range.h"
+#include "htrange.h"
 
 // Sink management — defaults to stdout.
 // All output_* functions write to the current sink.

@@ -1,8 +1,7 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-
-#include "card.h"
+#include "combo.h"
 #include "engine.h"
 
 #define MAX_PLAYERS 9

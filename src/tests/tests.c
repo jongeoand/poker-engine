@@ -1,5 +1,3 @@
-#include "tests.h"
-
 void print_struct_sizes(void) {
 	printf("=== Struct Sizes ===\n\n");
 

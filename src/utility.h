@@ -2,6 +2,7 @@
 #define UTILITY_H_
 
 #include "game.h"
+#include "htrange.h"
 
 HandTypeRange aheadof(Game* game, int i);
 

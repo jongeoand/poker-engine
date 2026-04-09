@@ -3,13 +3,18 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "card.c"
-#include "engine.c"
-#include "range.c"
-#include "output.c"
-#include "game.c"
+#include "core/card.c"
+#include "core/combo.c"
+#include "core/handtype.c"
+#include "engine/engine.c"
+#include "engine/eval.c"
+#include "engine/draws.c"
+#include "range/range.c"
+#include "range/htrange.c"
+#include "cli/output.c"
+#include "sim/game.c"
 #include "utility.c"
-#include "tests.c"
+#include "tests/tests.c"
 
 void print_file(const char* filename) {
 	FILE* f = fopen(filename, "r");
@@ -122,7 +127,7 @@ int main(int argc, char* argv[]) {
 		printf("\n");
 		return 1;
 	}
-	
+
 	print_file("src/res/title.txt");
 	print_file("src/res/splash.txt"); printf("\n");
 	launchboard();

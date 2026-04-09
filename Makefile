@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -Wextra -std=c11 -Isrc
+CFLAGS  = -Wall -Wextra -std=c11 -Isrc -Isrc/core -Isrc/engine -Isrc/range -Isrc/sim -Isrc/cli
 LDFLAGS = -lpthread -lm
 
 TARGET = poker

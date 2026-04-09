@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include "engine.h"
+#include "eval.h"
+#include "draws.h"
 
 // Exact equity via full runout enumeration.
 // O(C(remaining, cards_needed)) — fast on river/turn, slow preflop.
