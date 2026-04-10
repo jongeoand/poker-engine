@@ -1,4 +1,4 @@
-// Board and hero shared across tests 1–4:
+// Board and hero shared across tests 1–6:
 //   Board: 2h 3d 4c  (no aces or kings — won't block AKs or TT)
 //   Hero:  5s 6s     (completes a 2-3-4-5-6 straight — beats all AKs and TT)
 //
@@ -146,5 +146,201 @@ void test_handmap(void) {
 		printf("  total:         topology=%4d  global=%4d  %s\n",
 		       topo_total, csc.total, topo_total == csc.total ? "OK" : "FAIL");
 		printf("  all states match: %s\n\n", all_ok ? "OK" : "FAIL");
+	}
+
+	// ---- Test 6: hmap_project_state — AKs only ----
+	// All 4 AKs combos are BEHIND_LIVE → (0,1) projects to COMBO_BEHIND_LIVE.
+	// All other cells are empty → sentinel COMBO_BEHIND_DEAD in StateField.
+	{
+		HandTypeRange htr = htr_empty();
+		htr_add(&htr, make_suited((uint8_t)ACE, (uint8_t)KING));
+
+		RangeField rf = hmap_build(&htr, 0, board, hero);
+		StateField sf;
+		hmap_project_state(&rf, &sf);
+
+		bool cell_ok = (sf.grid[0][1] == COMBO_BEHIND_LIVE);
+
+		int live_count = 0;
+		for (int r = 0; r < HMAP_DIM; r++)
+			for (int c = 0; c < HMAP_DIM; c++)
+				if (sf.grid[r][c] == COMBO_BEHIND_LIVE)
+					live_count++;
+
+		printf("Test 6 - project_state, AKs only:\n");
+		printf("  (0,1) == BEHIND_LIVE:      %s\n", cell_ok ? "OK" : "FAIL");
+		printf("  live cells in StateField:  %d  (expected 1) %s\n\n",
+		       live_count, live_count == 1 ? "OK" : "FAIL");
+	}
+
+	// ---- Test 7: hmap_project_state — full range spot-check ----
+	// For each of 5 sampled cells, recompute the dominant state from the RangeField
+	// directly and verify the projected StateField agrees.
+	{
+		HandTypeRange full = htr_full();
+		RangeField rf = hmap_build(&full, 0, board, hero);
+		StateField sf;
+		hmap_project_state(&rf, &sf);
+
+		int spots[5][2] = { {0,0}, {0,1}, {4,4}, {1,0}, {0,12} };
+		bool all_ok = true;
+
+		printf("Test 7 - project_state, full range spot-check:\n");
+		for (int i = 0; i < 5; i++) {
+			int r = spots[i][0], c = spots[i][1];
+			const HMapCell* cell = &rf.grid[r][c];
+
+			ComboState expected = COMBO_BEHIND_DEAD;
+			if (cell->combo_total > 0) {
+				expected = COMBO_AHEAD;
+				for (int s = 1; s < COMBO_STATE_COUNT; s++)
+					if (cell->statecounts[s] > cell->statecounts[expected])
+						expected = (ComboState)s;
+			}
+
+			bool ok = (sf.grid[r][c] == expected);
+			if (!ok) all_ok = false;
+			printf("  (%d,%d): projected=%-12s  expected=%-12s  %s\n",
+			       r, c, combostate_str(sf.grid[r][c]), combostate_str(expected),
+			       ok ? "OK" : "FAIL");
+		}
+		printf("  all match: %s\n\n", all_ok ? "OK" : "FAIL");
+	}
+
+	// ---- Test 8: output_rangefield — line count and symbol check ----
+	// AKs only, CELL_1, SYMSET_ASCII, RENDER_STATE.
+	// Row 0: col 0 = AA (empty → '.'), col 1 = AKs (BEHIND_LIVE → 'L').
+	// Total output: 13 lines (one per row).
+	{
+		HandTypeRange htr = htr_empty();
+		htr_add(&htr, make_suited((uint8_t)ACE, (uint8_t)KING));
+		RangeField rf = hmap_build(&htr, 0, board, hero);
+
+		char buf[2048] = {0};
+		FILE* tmp = tmpfile();
+		output_set_sink(tmp);
+		RenderConfig cfg = { RENDER_STATE, SYMSET_ASCII, CELL_1 };
+		output_rangefield(&rf, cfg);
+		fflush(tmp);
+		rewind(tmp);
+		fread(buf, 1, sizeof(buf) - 1, tmp);
+		fclose(tmp);
+		output_set_sink(stdout);
+
+		int lines = 0;
+		for (int i = 0; buf[i]; i++)
+			if (buf[i] == '\n') lines++;
+
+		// CELL_1: each cell is 2 chars (symbol + space). Col 0 at byte 0, col 1 at byte 2.
+		char col0_sym = buf[0];
+		char col1_sym = buf[2];
+
+		bool lines_ok = (lines == 13);
+		bool col0_ok  = (col0_sym == '.');
+		bool col1_ok  = (col1_sym == 'L');
+
+		printf("Test 8 - output_rangefield (CELL_1, ASCII, STATE):\n");
+		printf("  line count:            %d  (expected 13) %s\n", lines, lines_ok ? "OK" : "FAIL");
+		printf("  row 0 col 0 symbol: '%c'  (expected '.') %s\n", col0_sym, col0_ok ? "OK" : "FAIL");
+		printf("  row 0 col 1 symbol: '%c'  (expected 'L') %s\n\n", col1_sym, col1_ok ? "OK" : "FAIL");
+	}
+
+	// ---- Test 9: output_statefield vs output_rangefield (RENDER_STATE) ----
+	// On a full range with no dead cards all 169 cells are populated, so
+	// output_statefield must produce the same result as output_rangefield RENDER_STATE.
+	{
+		HandTypeRange full = htr_full();
+		RangeField rf = hmap_build(&full, 0, board, hero);
+		StateField sf;
+		hmap_project_state(&rf, &sf);
+
+		char buf_rf[4096] = {0};
+		char buf_sf[4096] = {0};
+		RenderConfig cfg = { RENDER_STATE, SYMSET_ASCII, CELL_1 };
+
+		FILE* t1 = tmpfile();
+		output_set_sink(t1);
+		output_rangefield(&rf, cfg);
+		fflush(t1); rewind(t1);
+		fread(buf_rf, 1, sizeof(buf_rf) - 1, t1);
+		fclose(t1);
+
+		FILE* t2 = tmpfile();
+		output_set_sink(t2);
+		output_statefield(&sf, cfg);
+		fflush(t2); rewind(t2);
+		fread(buf_sf, 1, sizeof(buf_sf) - 1, t2);
+		fclose(t2);
+
+		output_set_sink(stdout);
+
+		bool match = true;
+		for (int i = 0; buf_rf[i] || buf_sf[i]; i++) {
+			if (buf_rf[i] != buf_sf[i]) { match = false; break; }
+		}
+
+		printf("Test 9 - output_statefield matches output_rangefield (full range, RENDER_STATE):\n");
+		printf("  outputs match: %s\n\n", match ? "OK" : "FAIL");
+	}
+
+	// ---- Display: visual render of all modes ----
+	// Board: Ah Kd Qc  |  Hero: Jh Td  (broadway straight)
+	// Full villain range, dead = board | hero.
+	// Shows the 13×13 topology under each RenderMode × SymSet × CellWidth combination.
+	{
+		uint64_t board_d = toBitmask((Card){ .suit = HEART,   .rank = ACE  })
+		                 | toBitmask((Card){ .suit = DIAMOND, .rank = KING  })
+		                 | toBitmask((Card){ .suit = CLUB,    .rank = QUEEN });
+		uint64_t hero_d  = toBitmask((Card){ .suit = HEART,   .rank = JACK  })
+		                 | toBitmask((Card){ .suit = DIAMOND, .rank = TEN   });
+		uint64_t dead_d  = board_d | hero_d;
+
+		HandTypeRange full = htr_full();
+		RangeField rf = hmap_build(&full, dead_d, board_d, hero_d);
+		StateField sf;
+		hmap_project_state(&rf, &sf);
+
+		printf("Display — board: Ah Kd Qc  hero: Jh Td\n");
+		printf("(A=ahead  C=chop  L=behind_live  D=behind_dead  .=empty)\n\n");
+
+		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_STATE  SYMSET_UNICODE  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_UNICODE, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_PURITY  SYMSET_ASCII  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_PURITY, SYMSET_ASCII, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_PURITY  SYMSET_UNICODE  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_PURITY, SYMSET_UNICODE, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_DRAW  SYMSET_ASCII  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_DRAW, SYMSET_ASCII, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_DRAW  SYMSET_UNICODE  CELL_1:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_DRAW, SYMSET_UNICODE, CELL_1 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_2 });
+		printf("\n");
+
+		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_4:\n");
+		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_4 });
+		printf("\n");
+
+		printf("output_statefield  SYMSET_ASCII:\n");
+		output_statefield(&sf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_1 });
+		printf("\n");
+
+		printf("output_statefield  SYMSET_UNICODE:\n");
+		output_statefield(&sf, (RenderConfig){ RENDER_STATE, SYMSET_UNICODE, CELL_1 });
+		printf("\n");
 	}
 }

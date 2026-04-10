@@ -3,6 +3,17 @@
 
 #include <stdio.h>
 #include "htrange.h"
+#include "map/handmap.h"
+
+typedef enum { RENDER_STATE, RENDER_PURITY, RENDER_DRAW } RenderMode;
+typedef enum { SYMSET_ASCII, SYMSET_UNICODE }             SymSet;
+typedef enum { CELL_1, CELL_2, CELL_4 }                  CellWidth;
+
+typedef struct {
+	RenderMode mode;
+	SymSet     symset;
+	CellWidth  width;
+} RenderConfig;
 
 // Sink management — defaults to stdout.
 // All output_* functions write to the current sink.
@@ -23,5 +34,9 @@ void output_equity(double eq);
 void output_htr(const HandTypeRange* h);
 void output_htr_board_profile(const HtrBoardProfile* p);
 void output_htr_equity_split(const HtrEquitySplit* s);
+
+// Topology rendering (RangeField / StateField)
+void output_rangefield(const RangeField* f, RenderConfig cfg);
+void output_statefield(const StateField* f, RenderConfig cfg);
 
 #endif

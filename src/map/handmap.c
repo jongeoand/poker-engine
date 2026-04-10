@@ -94,6 +94,25 @@ void hmap_state_fill(StateField* f, ComboState fill) {
 	}
 }
 
+StateField* hmap_project_state(const RangeField* rf, StateField* out) {
+	for (int r = 0; r < HMAP_DIM; r++) {
+		for (int c = 0; c < HMAP_DIM; c++) {
+			const HMapCell* cell = &rf->grid[r][c];
+			if (cell->combo_total == 0) {
+				out->grid[r][c] = COMBO_BEHIND_DEAD;
+				continue;
+			}
+			ComboState dominant = COMBO_AHEAD;
+			for (int s = 1; s < COMBO_STATE_COUNT; s++) {
+				if (cell->statecounts[s] > cell->statecounts[dominant])
+					dominant = (ComboState)s;
+			}
+			out->grid[r][c] = dominant;
+		}
+	}
+	return out;
+}
+
 // Axis ↔ rank: ACE (rank 12) → axis 0, TWO (rank 0) → axis 12.
 // Higher rank = lower axis, so the field reads ace-first top-left.
 static inline int rank_toaxis(int r)    { return 12 - r; }

@@ -70,6 +70,11 @@ typedef struct {
 
 void hmap_state_fill(StateField* f, ComboState fill);
 
+// Project RangeField → StateField by selecting the dominant ComboState per cell.
+// Empty cells (combo_total == 0) are assigned COMBO_BEHIND_DEAD as a sentinel.
+// Returns out for chaining.
+StateField* hmap_project_state(const RangeField* rf, StateField* out);
+
 // Coordinate mapping: HandType ↔ (row, col) in the hand matrix above.
 void     hmap_tocoords(HandType ht, int* row, int* col);
 HandType hmap_fromcoords(int row, int col);

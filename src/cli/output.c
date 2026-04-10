@@ -136,6 +136,127 @@ void output_htr_equity_split(const HtrEquitySplit* s) {
 	output_htr(&s->chopping);
 }
 
+// ---- RangeField / StateField rendering ----
+
+static const char* state_unicode_sym(ComboState s) {
+	switch (s) {
+		case COMBO_AHEAD:       return "\xe2\x96\x88"; // █
+		case COMBO_CHOP:        return "\xe2\x94\x80"; // ─
+		case COMBO_BEHIND_LIVE: return "\xe2\x96\x92"; // ▒
+		case COMBO_BEHIND_DEAD: return "\xe2\x96\x91"; // ░
+		default:                return "\xc2\xb7";     // ·
+	}
+}
+
+static const char* ASCII_RAMP[8]   = { ".", ":", "-", "=", "+", "*", "#", "@" };
+static const char* UNICODE_RAMP[9] = { "\xc2\xb7","▁","▂","▃","▄","▅","▆","▇","█" };
+
+static int ramp_index(double frac, int levels) {
+	int i = (int)(frac * levels);
+	return i >= levels ? levels - 1 : i < 0 ? 0 : i;
+}
+
+void output_rangefield(const RangeField* f, RenderConfig cfg) {
+	FILE* sink = output_get_sink();
+	for (int r = 0; r < HMAP_DIM; r++) {
+		for (int c = 0; c < HMAP_DIM; c++) {
+			const HMapCell* cell = &f->grid[r][c];
+			int empty = (cell->combo_total == 0);
+
+			ComboState dominant = COMBO_BEHIND_DEAD;
+			double dom_frac = 0.0, draw_frac = 0.0;
+			if (!empty) {
+				dominant = COMBO_AHEAD;
+				for (int s = 1; s < COMBO_STATE_COUNT; s++)
+					if (cell->statecounts[s] > cell->statecounts[dominant])
+						dominant = (ComboState)s;
+				dom_frac  = (double)cell->statecounts[dominant] / cell->combo_total;
+				draw_frac = (double)cell->statecounts[COMBO_BEHIND_LIVE] / cell->combo_total;
+			}
+
+			switch (cfg.width) {
+			case CELL_1:
+				if (empty) {
+					fputs(cfg.symset == SYMSET_ASCII ? ". " : "\xc2\xb7 ", sink);
+					break;
+				}
+				switch (cfg.mode) {
+				case RENDER_STATE:
+					if (cfg.symset == SYMSET_ASCII)
+						fprintf(sink, "%c ", combostate_symbol(dominant));
+					else
+						fprintf(sink, "%s ", state_unicode_sym(dominant));
+					break;
+				case RENDER_PURITY:
+					fprintf(sink, "%s ",
+						cfg.symset == SYMSET_ASCII
+							? ASCII_RAMP[ramp_index(dom_frac, 8)]
+							: UNICODE_RAMP[ramp_index(dom_frac, 9)]);
+					break;
+				case RENDER_DRAW:
+					fprintf(sink, "%s ",
+						cfg.symset == SYMSET_ASCII
+							? ASCII_RAMP[ramp_index(draw_frac, 8)]
+							: UNICODE_RAMP[ramp_index(draw_frac, 9)]);
+					break;
+				}
+				break;
+
+			case CELL_2:
+				if (empty) {
+					fputs(cfg.symset == SYMSET_ASCII ? ".  " : "\xc2\xb7  ", sink);
+					break;
+				}
+				if (cfg.symset == SYMSET_ASCII)
+					fprintf(sink, "%c%s ", combostate_symbol(dominant),
+						ASCII_RAMP[ramp_index(dom_frac, 8)]);
+				else
+					fprintf(sink, "%s%s ", state_unicode_sym(dominant),
+						UNICODE_RAMP[ramp_index(dom_frac, 9)]);
+				break;
+
+			case CELL_4:
+				if (empty) {
+					fputs("  .  ", sink);
+					break;
+				}
+				{
+					uint8_t hi_rank = (uint8_t)(r <= c ? 12 - r : 12 - c);
+					uint8_t lo_rank = (uint8_t)(r <= c ? 12 - c : 12 - r);
+					char hi = rank_to_char(hi_rank);
+					char lo = rank_to_char(lo_rank);
+					if (r == c)
+						fprintf(sink, " %c%c", hi, lo);
+					else if (r < c)
+						fprintf(sink, "%c%cs", hi, lo);
+					else
+						fprintf(sink, "%c%co", hi, lo);
+					if (cfg.symset == SYMSET_ASCII)
+						fprintf(sink, "%c ", combostate_symbol(dominant));
+					else
+						fprintf(sink, "%s ", state_unicode_sym(dominant));
+				}
+				break;
+			}
+		}
+		fputc('\n', sink);
+	}
+}
+
+void output_statefield(const StateField* f, RenderConfig cfg) {
+	FILE* sink = output_get_sink();
+	for (int r = 0; r < HMAP_DIM; r++) {
+		for (int c = 0; c < HMAP_DIM; c++) {
+			ComboState s = f->grid[r][c];
+			if (cfg.symset == SYMSET_ASCII)
+				fprintf(sink, "%c ", combostate_symbol(s));
+			else
+				fprintf(sink, "%s ", state_unicode_sym(s));
+		}
+		fputc('\n', sink);
+	}
+}
+
 void output_htr_board_profile(const HtrBoardProfile* p) {
 	FILE* out = output_get_sink();
 	fprintf(out, "Board profile (%d live types):\n", p->total);
