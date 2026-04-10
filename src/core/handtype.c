@@ -5,8 +5,8 @@ bool handtype_is_suited(HandType ht)  { return ht.r_b >  ht.r_a; }
 bool handtype_is_offsuit(HandType ht) { return ht.r_a >  ht.r_b; }
 
 // implicit categorization in nibble
-uint8_t handtype_hi(HandType ht) { return handtype_is_suited(ht) ? ht.r_b : ht.r_a }
-uint8_t handtype_lo(HandType ht) { return handtype_is_suited(ht) ? ht.r_a : ht.r_b }
+uint8_t handtype_hi(HandType ht) { return handtype_is_suited(ht) ? ht.r_b : ht.r_a; }
+uint8_t handtype_lo(HandType ht) { return handtype_is_suited(ht) ? ht.r_a : ht.r_b; }
 
 HandType make_pair(uint8_t rank) {
 	return (HandType){ .r_a = rank, .r_b = rank };

@@ -16,11 +16,13 @@
 #include "utility.c"
 #include "range/iterate.c"
 #include "analysis/combostate.c"
+#include "map/handmap.c"
 
 #include "tests/test_core.c"
 #include "tests/test_range.c"
 #include "tests/test_engine.c"
 #include "tests/test_combostate.c"
+#include "tests/test_topology.c"
 
 #define SEP "============================================================\n"
 
@@ -34,7 +36,8 @@ int main(void) {
 	test_range();         printf(SEP);
 	test_handtype_range(); printf(SEP);
 	test_engine();         printf(SEP);
-	test_combostate();
+	test_combostate();     printf(SEP);
+	test_topology();
 
 	return 0;
 }

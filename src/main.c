@@ -16,10 +16,12 @@
 #include "utility.c"
 #include "range/iterate.c"
 #include "analysis/combostate.c"
+#include "map/handmap.c"
 #include "tests/test_core.c"
 #include "tests/test_range.c"
 #include "tests/test_engine.c"
 #include "tests/test_combostate.c"
+#include "tests/test_topology.c"
 
 void print_file(const char* filename) {
 	FILE* f = fopen(filename, "r");
@@ -72,6 +74,7 @@ static void print_tests_prompt(void) {
 	printf("  5 -  range\n");
 	printf("  6 -  hand type range\n");
 	printf("  7 -  combostate & streams\n");
+	printf("  8 -  range topology\n");
 	printf("  n -  test new \n");
 	printf("  q -  back\n\n > ");
 }
@@ -84,9 +87,10 @@ static const Cmd test_cmds[] = {
 	{ '5', "range",           test_range            },
 	{ '6', "hand type range", test_handtype_range   },
 	{ '7', "combostate",      test_combostate       },
+	{ '8', "topology",        test_topology         },
 	{ 'n', "new",             test_engine           },
 };
-#define TEST_CMD_COUNT 8
+#define TEST_CMD_COUNT 9
 
 static void run_tests(void) {
 	run_menu(print_tests_prompt, test_cmds, TEST_CMD_COUNT);
