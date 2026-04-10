@@ -14,7 +14,12 @@
 #include "cli/output.c"
 #include "sim/game.c"
 #include "utility.c"
-#include "tests/tests.c"
+#include "range/iterate.c"
+#include "analysis/combostate.c"
+#include "tests/test_core.c"
+#include "tests/test_range.c"
+#include "tests/test_engine.c"
+#include "tests/test_combostate.c"
 
 void print_file(const char* filename) {
 	FILE* f = fopen(filename, "r");
@@ -66,6 +71,7 @@ static void print_tests_prompt(void) {
 	printf("  4 -  hand types\n");
 	printf("  5 -  range\n");
 	printf("  6 -  hand type range\n");
+	printf("  7 -  combostate & streams\n");
 	printf("  n -  test new \n");
 	printf("  q -  back\n\n > ");
 }
@@ -77,9 +83,10 @@ static const Cmd test_cmds[] = {
 	{ '4', "hand types",      test_handtypes        },
 	{ '5', "range",           test_range            },
 	{ '6', "hand type range", test_handtype_range   },
-	{ 'n', "new",             test                  },
+	{ '7', "combostate",      test_combostate       },
+	{ 'n', "new",             test_engine           },
 };
-#define TEST_CMD_COUNT 7
+#define TEST_CMD_COUNT 8
 
 static void run_tests(void) {
 	run_menu(print_tests_prompt, test_cmds, TEST_CMD_COUNT);

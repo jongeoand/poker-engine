@@ -190,6 +190,7 @@ uint32_t calculate_hand_strength(uint64_t hand) {
 	return strength;
 }
 
+// Return 1 if hero strength > villain strength
 int compare_hands(uint64_t board, uint64_t hero, uint64_t villain) {
 	uint32_t hero_strength    = calculate_hand_strength(merge(board, hero));
 	uint32_t villain_strength = calculate_hand_strength(merge(board, villain));
