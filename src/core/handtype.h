@@ -18,6 +18,9 @@ bool handtype_is_pair(HandType ht);
 bool handtype_is_suited(HandType ht);
 bool handtype_is_offsuit(HandType ht);
 
+uint8_t handtype_hi(Handtype ht);
+uint8_t handtype_lo(Handtype ht);
+
 // Construction
 HandType make_pair(uint8_t rank);
 HandType make_suited(uint8_t high, uint8_t low);
