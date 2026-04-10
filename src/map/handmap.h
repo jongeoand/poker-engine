@@ -1,0 +1,77 @@
+#ifndef HANDMAP_H_
+#define HANDMAP_H_
+
+#include "analysis/combostate.h"
+#include "core/handtype.h"
+#include "range/htrange.h"
+
+#define HMAP_DIM 13
+
+// Combo state distribution for all combos belonging to one hand type.
+// eg. for AKs: counts across {AhKh, AcKc, AdKd, AsKs} and their total.
+typedef struct {
+	int statecounts[COMBO_STATE_COUNT];
+	int combo_total;
+} HMapCell;
+
+void hmap_cell_clear(HMapCell* p);
+
+bool hmap_cell_isempty(const HMapCell* p);
+bool hmap_cell_ismixed(const HMapCell* p);
+
+void hmap_cell_add(HMapCell* p, ComboState state);
+void hmap_cell_merge(HMapCell* dst, const HMapCell* src);
+
+// 13×13 grid holding one HMapCell per hand type (169 types total,
+// up to 12 combos per cell). Encodes the ComboState distribution of every
+// combo in the support across the standard poker hand matrix.
+//
+// Grid layout — axis mapping: 12 - rank
+//   ACE (rank 12) → axis 0    TWO (rank 0) → axis 12
+//
+//         col:   0     1     2     3   ·  ·  ·   11    12
+//                A     K     Q     J              3     2
+//               ┌─────┬─────┬─────┬─────┬─ · ─┬─────┬─────┐
+//   row 0   A   │ AA  │ AKs │ AQs │ AJs │     │ A3s │ A2s │
+//               ├─────┼─────┼─────┼─────┼─ · ─┼─────┼─────┤
+//   row 1   K   │ AKo │ KK  │ KQs │ KJs │     │ K3s │ K2s │
+//               ├─────┼─────┼─────┼─────┼─ · ─┼─────┼─────┤
+//   row 2   Q   │ AQo │ KQo │ QQ  │ QJs │     │ Q3s │ Q2s │
+//               ├─────┼─────┼─────┼─────┼─ · ─┼─────┼─────┤
+//   row 3   J   │ AJo │ KJo │ QJo │ JJ  │     │ J3s │ J2s │
+//               ├─────┼─────┼─────┼─────┼─ · ─┼─────┼─────┤
+//    · · ·      │                                           │
+//               ├─────┼─────┼─────┼─────┼─ · ─┼─────┼─────┤
+//   row 12  2   │ A2o │ K2o │ Q2o │ J2o │     │ 32o │ 22  │
+//               └─────┴─────┴─────┴─────┴─ · ─┴─────┴─────┘
+//
+//   Diagonal    (row == col): pairs
+//   Above diag  (row <  col): suited   — high card → row, low card → col
+//   Below diag  (row >  col): offsuit  — low  card → row, high card → col
+typedef struct {
+	HMapCell grid[HMAP_DIM][HMAP_DIM];
+} RangeField;
+
+void hmap_clear(RangeField* f);
+
+// Build a RangeField from a support and game state.
+// dead  = board | hero bitmask (blocks combos from the stream)
+// board = board card bitmask   (used for ComboState classification)
+// hero  = hero hole card bitmask
+RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, uint64_t hero);
+
+int hmap_total(const RangeField* f);
+int hmap_count(const RangeField* f, ComboState s);
+
+// 13×13 grid assigning a single dominant ComboState to each hand type cell.
+typedef struct {
+	ComboState grid[HMAP_DIM][HMAP_DIM];
+} StateField;
+
+void hmap_state_fill(StateField* f, ComboState fill);
+
+// Coordinate mapping: HandType ↔ (row, col) in the hand matrix above.
+void     hmap_tocoords(HandType ht, int* row, int* col);
+HandType hmap_fromcoords(int row, int col);
+
+#endif
