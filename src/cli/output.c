@@ -79,7 +79,7 @@ void output_htr_equity_split(const HtrEquitySplit* s) {
 	output_htr(&s->chopping);
 }
 
-// ---- Topology rendering ----
+// ---- Field rendering ----
 
 void output_rangefield(const RangeField* f, RenderConfig cfg) {
 	Renderer r = make_renderer(cfg);

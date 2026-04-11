@@ -11,7 +11,7 @@
    Rows/cols from ACE(12) down to TWO(0); cells are 4 chars wide. */
 void views_htr_grid(Renderer* r, const HandTypeRange* h);
 
-/* Full topology grid — respects r->mode, r->symset, r->width. */
+/* Full field  grid — respects r->mode, r->symset, r->width. */
 void views_rangefield(Renderer* r, const RangeField* f);
 
 /* Dominant-state-only grid — respects r->symset. */

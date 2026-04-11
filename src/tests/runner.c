@@ -26,6 +26,7 @@
 #include "tests/test_engine.c"
 #include "tests/test_combostate.c"
 #include "tests/test_handmap.c"
+#include "tests/test_render.c"
 
 #define SEP "============================================================\n"
 
@@ -40,7 +41,8 @@ int main(void) {
 	test_handtype_range(); printf(SEP);
 	test_engine();         printf(SEP);
 	test_combostate();     printf(SEP);
-	test_handmap();
+	test_handmap(); printf(SEP);
+	test_render();
 
 	return 0;
 }
