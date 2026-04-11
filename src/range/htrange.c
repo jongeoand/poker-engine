@@ -121,7 +121,13 @@ HandTypeRange range_compress(const Range* r) {
 	return h;
 }
 
-// ---- Filters ----
+//
+// Todo - investigate functionality of htrfilter / htrequitysplit / htr_vs_combo
+//
+// Initial idea was that HandTypeRange is easier to store across streets but 
+// ComboStream gives more detail as it looks specifically at each live combo
+//
+// ---- Filters - deprecated ----
 
 HandTypeRange htrfilter_by_rank(const HandTypeRange* htr, uint64_t board, HandRank rank) {
 	HandTypeRange result = htr_empty();
