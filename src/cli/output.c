@@ -1,3 +1,9 @@
+/*
+ * DEPRECATED: output.c is a legacy compatibility layer predating the Renderer
+ * struct. New code should use render_() / views_() functions directly via a
+ * Renderer, or operate through a Session. This file is kept for backward
+ * compatibility with existing test code only.
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>

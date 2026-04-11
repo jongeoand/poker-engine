@@ -20,6 +20,8 @@
 #include "cli/views.c"
 #include "cli/output.c"
 #include "sim/game.c"
+#include "cli/command.c"
+#include "cli/session.c"
 #include "tests/test_core.c"
 #include "tests/test_range.c"
 #include "tests/test_engine.c"
@@ -103,16 +105,23 @@ static void run_tests(void) {
 // Top-level launchboard
 // ============================================================
 
+static void run_session_cmd(void) {
+	Session sesh = session_default();
+	start_session(&sesh);
+}
+
 static void print_launchboard_prompt(void) {
 	printf("=== Launchboard ===\n");
+	printf("  s -  session\n");
 	printf("  t -  tests\n");
 	printf("  q -  quit\n\n > ");
 }
 
 static const Cmd launchboard_cmds[] = {
-	{ 't', "tests", run_tests },
+	{ 's', "session", run_session_cmd },
+	{ 't', "tests",   run_tests       },
 };
-#define LAUNCHBOARD_CMD_COUNT 1
+#define LAUNCHBOARD_CMD_COUNT 2
 
 void launchboard(void) {
 	run_menu(print_launchboard_prompt, launchboard_cmds, LAUNCHBOARD_CMD_COUNT);
