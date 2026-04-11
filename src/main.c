@@ -11,12 +11,15 @@
 #include "engine/draws.c"
 #include "range/range.c"
 #include "range/htrange.c"
-#include "cli/output.c"
-#include "sim/game.c"
+#include "cli/render.c"
 #include "utility.c"
 #include "range/iterate.c"
 #include "analysis/combostate.c"
 #include "map/handmap.c"
+#include "cli/symbols.c"
+#include "cli/views.c"
+#include "cli/output.c"
+#include "sim/game.c"
 #include "tests/test_core.c"
 #include "tests/test_range.c"
 #include "tests/test_engine.c"
@@ -88,7 +91,7 @@ static const Cmd test_cmds[] = {
 	{ '6', "hand type range", test_handtype_range   },
 	{ '7', "combostate",      test_combostate       },
 	{ '8', "handmap",         test_handmap          },
-	{ 'n', "new",             test_engine           },
+	{ '9', "engine",             test_engine           },
 };
 #define TEST_CMD_COUNT 9
 
