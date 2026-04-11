@@ -14,12 +14,17 @@ typedef struct {
 	int combo_total;
 } HMapCell;
 
+// Zero all state counts and the combo total.
 void hmap_cell_clear(HMapCell* p);
 
+// True when combo_total == 0 (no combos assigned to this cell).
 bool hmap_cell_isempty(const HMapCell* p);
+// True when more than one ComboState bucket is non-zero.
 bool hmap_cell_ismixed(const HMapCell* p);
 
+// Increment the bucket for `state` and bump combo_total by 1.
 void hmap_cell_add(HMapCell* p, ComboState state);
+// Add every state count and combo_total from `src` into `dst`.
 void hmap_cell_merge(HMapCell* dst, const HMapCell* src);
 
 // 13×13 grid holding one HMapCell per hand type (169 types total,
@@ -52,6 +57,7 @@ typedef struct {
 	HMapCell grid[HMAP_DIM][HMAP_DIM];
 } RangeField;
 
+// Zero every HMapCell in the grid.
 void hmap_clear(RangeField* f);
 
 // Build a RangeField from a support and game state.
@@ -60,7 +66,9 @@ void hmap_clear(RangeField* f);
 // hero  = hero hole card bitmask
 RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, uint64_t hero);
 
+// Sum of combo_total across all 169 cells.
 int hmap_total(const RangeField* f);
+// Sum of the `s` bucket across all 169 cells.
 int hmap_count(const RangeField* f, ComboState s);
 
 // 13×13 grid assigning a single dominant ComboState to each hand type cell.
@@ -68,6 +76,7 @@ typedef struct {
 	ComboState grid[HMAP_DIM][HMAP_DIM];
 } StateField;
 
+// Set every cell in the grid to `fill`.
 void hmap_state_fill(StateField* f, ComboState fill);
 
 // Project RangeField → StateField by selecting the dominant ComboState per cell.

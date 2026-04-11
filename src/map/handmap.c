@@ -2,6 +2,7 @@
 
 #include "map/handmap.h"
 
+// Reset a cell to the zero state (all buckets empty, no combos recorded).
 void hmap_cell_clear(HMapCell* p) {
 	for (int i = 0; i < COMBO_STATE_COUNT; i++) {
 		p->statecounts[i] = 0;
@@ -9,6 +10,7 @@ void hmap_cell_clear(HMapCell* p) {
 	p->combo_total = 0;
 }
 
+// A cell is empty when no combos from the active range map to its hand type.
 bool hmap_cell_isempty(const HMapCell* p) {
 	return p->combo_total == 0;
 }
@@ -25,11 +27,13 @@ bool hmap_cell_ismixed(const HMapCell* p) {
 	return false;
 }
 
+// Record one combo: increment its state bucket and the running total.
 void hmap_cell_add(HMapCell* p, ComboState state) {
 	p->statecounts[state]++;
 	p->combo_total++;
 }
 
+// Fold src into dst bucket-by-bucket; used to union two RangeFields.
 void hmap_cell_merge(HMapCell* dst, const HMapCell* src) {
 	for (int i = 0; i < COMBO_STATE_COUNT; i++) {
 		dst->statecounts[i] += src->statecounts[i];
@@ -37,6 +41,7 @@ void hmap_cell_merge(HMapCell* dst, const HMapCell* src) {
 	dst->combo_total += src->combo_total;
 }
 
+// Clear every cell so the grid is ready for a fresh build or accumulation.
 void hmap_clear(RangeField* f) {
 	for (int row = 0; row < HMAP_DIM; row++) {
 		for (int col = 0; col < HMAP_DIM; col++) {
@@ -45,6 +50,9 @@ void hmap_clear(RangeField* f) {
 	}
 }
 
+// Build a RangeField by streaming every live combo in `htr`.
+// Each combo is classified against the current board/hero state, mapped to its
+// hand-matrix cell via hmap_tocoords, and recorded with hmap_cell_add.
 RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, uint64_t hero) {
 	RangeField f;
 	hmap_clear(&f);
@@ -66,6 +74,7 @@ RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, u
 	return f;
 }
 
+// Total live combos across the entire grid (sum of all cell combo_totals).
 int hmap_total(const RangeField* f) {
 	int total = 0;
 	for (int row = 0; row < HMAP_DIM; row++) {
@@ -76,6 +85,7 @@ int hmap_total(const RangeField* f) {
 	return total;
 }
 
+// Total combos in state `s` across the entire grid.
 int hmap_count(const RangeField* f, ComboState s) {
 	int total = 0;
 	for (int row = 0; row < HMAP_DIM; row++) {
@@ -86,6 +96,8 @@ int hmap_count(const RangeField* f, ComboState s) {
 	return total;
 }
 
+// Flood every cell of a StateField with a single state; useful for
+// initialising before a selective override pass.
 void hmap_state_fill(StateField* f, ComboState fill) {
 	for (int row = 0; row < HMAP_DIM; row++) {
 		for (int col = 0; col < HMAP_DIM; col++) {
@@ -94,6 +106,11 @@ void hmap_state_fill(StateField* f, ComboState fill) {
 	}
 }
 
+// Collapse a RangeField to a StateField by picking the modal ComboState
+// (the bucket with the highest count) for each cell.  Ties are broken in
+// favour of the lower-valued ComboState enum (COMBO_AHEAD wins ties).
+// Empty cells (combo_total == 0) are written as COMBO_BEHIND_DEAD so
+// renderers can distinguish "not in range" from genuine behind combos.
 StateField* hmap_project_state(const RangeField* rf, StateField* out) {
 	for (int r = 0; r < HMAP_DIM; r++) {
 		for (int c = 0; c < HMAP_DIM; c++) {
