@@ -24,6 +24,26 @@ void print_struct_sizes(void) {
 	printf("  HtrBoardProfile:%2zu bytes\n", sizeof(HtrBoardProfile));
 	printf("  HtrEquitySplit: %2zu bytes\n", sizeof(HtrEquitySplit));
 	printf("\n");
+
+	printf("  -- engine masks --\n");
+	printf("  SuitMasks:      %2zu bytes\n", sizeof(SuitMasks));
+	printf("  PairMasks:      %2zu bytes\n", sizeof(PairMasks));
+	printf("\n");
+
+	printf("  -- simulation --\n");
+	printf("  Game:           %2zu bytes\n", sizeof(Game));
+	printf("\n");
+
+	printf("  -- hand map --\n");
+	printf("  HMapCell:       %2zu bytes\n", sizeof(HMapCell));
+	printf("  RangeField:     %2zu bytes\n", sizeof(RangeField));
+	printf("  StateField:     %2zu bytes\n", sizeof(StateField));
+	printf("\n");
+
+	printf("  -- cli --\n");
+	printf("  RenderConfig:   %2zu bytes\n", sizeof(RenderConfig));
+	printf("  Renderer:       %2zu bytes\n", sizeof(Renderer));
+	printf("\n");
 }
 
 void test_cards(void) {
