@@ -70,7 +70,7 @@ static int cmd_deal(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     deal_players(&sesh->game);
 
-    sesh->last_cards_dealt = toBitmask(sesh->game.playerhands[0]);
+    sesh->last_cards_dealt = combo_toBitmask(sesh->game.playerhands[0]);
     sesh->has_hero = true;
 
     print_hero(sesh);
@@ -81,18 +81,16 @@ static int cmd_street(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     
     deal_street(&sesh->game);
-    sesh->last_cards_dealt = toBitmask(sesh->game.board);
+    sesh->last_cards_dealt = sesh->game.board;
     
     print_board(sesh);
     return CMD_OK;
 }
 
 static int cmd_undodeal(Session* sesh, int argc, char** argv) {
-    //undodeal should get undo the last deal action that accurred
-    // depends on whether board exists or not
-    //
-
-
+    (void)sesh; (void)argc; (void)argv;
+    /* TODO: undo last deal action (depends on whether board exists) */
+    return CMD_OK;
 }
 
 // print hero combo if Session has_hero, otherwise deal hero hand and print to sink
@@ -118,7 +116,7 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
 
     deal_street(&sesh->game);
     sesh->has_board = true;
-    sesh->last_cards_dealt = toBitmask(sesh->game.board);
+    sesh->last_cards_dealt = sesh->game.board;
     print_board(sesh);
 
     return CMD_OK;
@@ -261,6 +259,7 @@ static int cmd_quit(Session* sesh, int argc, char** argv) {
 
 static const Command session_cmds[] = {
 	{ "deal",    'd', "deal",                        "deal hero hand randomly from deck",                     cmd_deal           },
+	{ "undodeal",'u', "undodeal",                    "undo last deal action",                                 cmd_undodeal       },
 	{ "street",  's', "street",                      "deal next community street from deck",                  cmd_street         },
 	{ "print hero",  'h', "print hero",  "print hero hand",      cmd_hero  },
 	{ "print board", 'b', "print board", "print cards on board", cmd_board },
