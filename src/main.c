@@ -18,15 +18,9 @@
 #include "map/handmap.c"
 #include "cli/symbols.c"
 #include "cli/views.c"
-#include "cli/output.c"
 #include "sim/game.c"
 #include "cli/command.c"
 #include "cli/session.c"
-#include "tests/test_core.c"
-#include "tests/test_range.c"
-#include "tests/test_engine.c"
-#include "tests/test_combostate.c"
-#include "tests/test_handmap.c"
 
 void print_file(const char* filename) {
 	FILE* f = fopen(filename, "r");
@@ -67,41 +61,6 @@ void run_menu(void (*print_prompt)(void), const Cmd* cmds, int n) {
 }
 
 // ============================================================
-// Tests submenu
-// ============================================================
-
-static void print_tests_prompt(void) {
-	printf("=== Tests ===\n");
-	printf("  1 -  struct sizes\n");
-	printf("  2 -  cards\n");
-	printf("  3 -  combos\n");
-	printf("  4 -  hand types\n");
-	printf("  5 -  range\n");
-	printf("  6 -  hand type range\n");
-	printf("  7 -  combostate & streams\n");
-	printf("  8 -  handmap\n");
-	printf("  n -  test new \n");
-	printf("  q -  back\n\n > ");
-}
-
-static const Cmd test_cmds[] = {
-	{ '1', "struct sizes",    print_struct_sizes    },
-	{ '2', "cards",           test_cards            },
-	{ '3', "combos",          test_combos           },
-	{ '4', "hand types",      test_handtypes        },
-	{ '5', "range",           test_range            },
-	{ '6', "hand type range", test_handtype_range   },
-	{ '7', "combostate",      test_combostate       },
-	{ '8', "handmap",         test_handmap          },
-	{ '9', "engine",             test_engine           },
-};
-#define TEST_CMD_COUNT 9
-
-static void run_tests(void) {
-	run_menu(print_tests_prompt, test_cmds, TEST_CMD_COUNT);
-}
-
-// ============================================================
 // Top-level launchboard
 // ============================================================
 
@@ -113,15 +72,14 @@ static void run_session_cmd(void) {
 static void print_launchboard_prompt(void) {
 	printf("=== Launchboard ===\n");
 	printf("  s -  session\n");
-	printf("  t -  tests\n");
 	printf("  q -  quit\n\n > ");
 }
 
 static const Cmd launchboard_cmds[] = {
 	{ 's', "session", run_session_cmd },
-	{ 't', "tests",   run_tests       },
 };
-#define LAUNCHBOARD_CMD_COUNT 2
+
+#define LAUNCHBOARD_CMD_COUNT 1
 
 void launchboard(void) {
 	run_menu(print_launchboard_prompt, launchboard_cmds, LAUNCHBOARD_CMD_COUNT);
@@ -136,19 +94,19 @@ int main(int argc, char* argv[]) {
 
 	// Direct dispatch: ./poker 1..5 runs that test and exits.
 	if (argc > 1) {
-		char key = argv[1][0];
-		for (int i = 0; i < TEST_CMD_COUNT; i++) {
-			if (key == test_cmds[i].key) {
-				test_cmds[i].fn();
-				return 0;
-			}
-		}
 		printf("Unknown command '%s'\n", argv[1]);
-		printf("Available:");
-		for (int i = 0; i < TEST_CMD_COUNT; i++)
-			printf("  %c (%s)", test_cmds[i].key, test_cmds[i].label);
-		printf("\n");
-		return 1;
+        return 0;
+	//	for (int i = 0; i < TEST_CMD_COUNT; i++) {
+	//		if (key == test_cmds[i].key) {
+	//			test_cmds[i].fn();
+	//			return 0;
+	//		}
+	//	}
+	//	printf("Available:");
+	//	for (int i = 0; i < TEST_CMD_COUNT; i++)
+	//		printf("  %c (%s)", test_cmds[i].key, test_cmds[i].label);
+	//	printf("\n");
+	//	return 1;
 	}
 
 	print_file("src/res/title.txt");

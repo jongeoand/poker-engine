@@ -45,7 +45,6 @@ void deal_hand(Game* game) {
 
 	while(__builtin_popcountll(game->board) < 5) {
 		deal_street(game);
-		output_board(game->board); printf("\n");
 	}
 }
 
