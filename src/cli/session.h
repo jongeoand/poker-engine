@@ -1,6 +1,7 @@
 #ifndef SESSION_H_
 #define SESSION_H_
 
+#include <stdbool.h>
 #include "htrange.h"
 #include "game.h"
 #include "render.h"
@@ -12,6 +13,10 @@
 typedef struct Session {
 	Game          game;
 	Renderer      renderer;
+
+    // vars for tracking session state 
+    bool has_hero;
+    bool has_board;
 } Session;
 
 /* Initialize a default session: 2-player game, default renderer, empty range. */
