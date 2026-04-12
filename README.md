@@ -23,6 +23,8 @@ The central idea is to treat hand space as a structured domain and compute *fiel
 
 These maps make it easier to reason about bluffing regions, thin value opportunities, range advantage, and strategic sensitivity to future cards.
 
+Categorical mapping has been implemented, but no functionality for scalar / transition / frontier maps exists yet. 
+
 ## Current status
 
 The mathematical core of the engine is largely implemented:
@@ -99,8 +101,6 @@ The goal is a geometric view of range interaction, not just scalar metrics.
 - stabilize REPL workflows
 
 **Analysis extensions** — planned fields include draw strength maps, robustness maps, volatility maps, transition maps across streets, frontier detection, and line comparison views.
-
-**Range input** — planned support for textual range specification and saved scenarios.
 
 ## Non-goals
 
