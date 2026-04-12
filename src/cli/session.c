@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -16,6 +17,11 @@ Session session_default(void) {
     Session s;
     s.game      = make_game(2);
     s.renderer  = render_default();
+    
+    // default rendering settings
+    s.renderer.symset = SYMSET_UNICODE;
+    s.renderer.width = CELL_2;
+
     s.has_hero  = false;
     s.has_board = false;
     return s;
@@ -183,6 +189,41 @@ static int cmd_analyze(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+static int cmd_project(Session* sesh, int argc, char** argv) {
+    FILE* out = render_get_sink(&sesh->renderer);
+    int n = 1;
+
+    if (argc == 0) {
+        if (!sesh->has_hero)  { deal_players(&sesh->game);  sesh->has_hero  = true; }
+        if (!sesh->has_board) { deal_street(&sesh->game);   sesh->has_board = true; }
+    } else {
+        n = atoi(argv[0]);
+        if (n <= 0) { fprintf(out, "invalid count '%s'\n", argv[0]); return CMD_ERR; }
+    }
+
+    Combo    hero    = sesh->game.playerhands[0];
+    uint64_t bitmask = toBitmask(hero.a) | toBitmask(hero.b);
+    uint64_t dead    = bitmask | sesh->game.board;
+
+    HandTypeRange full = htr_full();
+
+    RangeField range_field = hmap_build(&full, dead, sesh->game.board, bitmask);
+    StateField plane;
+
+    hmap_project_state(&range_field, &plane);
+
+    fprintf(out, "RangeField: \n");
+    views_rangefield(&sesh->renderer, &range_field);
+    render_blank(&sesh->renderer);
+
+    for (int i = 0; i < n; i++) {
+        fprintf(out, "StateField %d \n", i);
+        views_statefield(&sesh->renderer, &plane);
+    }
+
+    return CMD_OK;
+}
+
 /* reset  — fresh deck, cleared board and hands, empty range */
 static int cmd_reset(Session* sesh, int argc, char** argv) {
 	(void)argc; (void)argv;
@@ -213,7 +254,8 @@ static const Command session_cmds[] = {
 	{ "print board", 'b', "print board", "print cards on board", cmd_board },
 	{ "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
 	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
-	{ "analyze", 'a', "analyze",                     "build RangeField + StateField vs hero + board",         cmd_analyze        },
+	{ "analyze",  'a', "analyze",                      "build RangeField + StateField vs hero + board",         cmd_analyze        },
+	{ "project",  'p', "project [n]",                 "project StateField n times (default 1)",                cmd_project        },
 	{ "reset",   'c', "reset",                       "clear all session state (deck, range)",                 cmd_reset          },
 	{ "help",    '?', "help",                        "print this command list",                               cmd_help           },
 	{ "quit",    'q', "quit",                        "exit session",                                          cmd_quit           },
