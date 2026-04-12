@@ -18,6 +18,7 @@
 #include "map/handmap.c"
 #include "cli/symbols.c"
 #include "cli/views.c"
+#include "cli/panel.c"
 #include "sim/game.c"
 
 #include "tests/test_core.c"
@@ -26,6 +27,7 @@
 #include "tests/test_combostate.c"
 #include "tests/test_handmap.c"
 #include "tests/test_render.c"
+#include "tests/test_panel.c"
 
 #define SEP "============================================================\n"
 
@@ -41,7 +43,8 @@ int main(void) {
 	test_engine();         printf(SEP);
 	test_combostate();     printf(SEP);
 	test_handmap(); printf(SEP);
-	test_render();
+	test_render();  printf(SEP);
+	test_panel();
 
 	return 0;
 }
