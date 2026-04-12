@@ -41,19 +41,19 @@ void print_struct_sizes(void) {
 	printf("\n");
 
 	printf("  -- cli --\n");
-	printf("  RenderConfig:   %2zu bytes\n", sizeof(RenderConfig));
 	printf("  Renderer:       %2zu bytes\n", sizeof(Renderer));
 	printf("\n");
 }
 
 void test_cards(void) {
 	printf("=== Cards ===\n\n");
+	Renderer ren = render_default();
 
 	printf("Enumeration via nested loop (suit × rank):\n\n");
 	for (int s = 0; s < 4; s++) {
 		for (int r = 0; r < 13; r++) {
 			Card card = { .suit = s, .rank = r };
-			output_card(card);
+			render_card(&ren, card);
 			printf("  ");
 		}
 		printf("\n");
@@ -62,26 +62,27 @@ void test_cards(void) {
 	printf("\nEnumeration via make_card(i):\n\n");
 	for (int i = 0; i < 52; i++) {
 		if (i % 13 == 0 && i > 0) printf("\n");
-		output_card(make_card(i));
+		render_card(&ren, make_card(i));
 		printf("  ");
 	}
 	printf("\n\n");
 
 	printf("Bitmask for Ac:\n");
 	Card ac = { .suit = CLUB, .rank = ACE };
-	output_binary(toBitmask(ac));
+	render_binary(&ren, toBitmask(ac));
 	printf("\n");
 }
 
 void test_combos(void) {
 	printf("=== Combos ===\n\n");
+	Renderer ren = render_default();
 
 	printf("Enumeration via nested loop (i < j over 52 cards):\n\n");
 	int count = 0;
 	for (int i = 0; i < 52; i++) {
 		for (int j = i + 1; j < 52; j++) {
 			Combo c = { make_card(i), make_card(j) };
-			output_combo(c);
+			render_combo(&ren, c);
 			printf(" ");
 			if (++count % 13 == 0) printf("\n");
 		}
@@ -91,7 +92,7 @@ void test_combos(void) {
 	printf("Enumeration via combo_from_index(i):\n\n");
 	for (int i = 0; i < COMBO_COUNT; i++) {
 		Combo c = combo_from_index(i);
-		output_combo(c);
+		render_combo(&ren, c);
 		printf(" ");
 		if ((i + 1) % 13 == 0) printf("\n");
 	}
@@ -100,7 +101,7 @@ void test_combos(void) {
 	printf("Combo properties (first 10):\n\n");
 	for (int i = 0; i < 10; i++) {
 		Combo c = combo_from_index(i);
-		output_combo(c);
+		render_combo(&ren, c);
 		printf("  suited=%-2d  pair=%-2d  hi=%c  lo=%c  idx=%d\n",
 			combo_is_suited(c),
 			combo_is_pair(c),
@@ -113,11 +114,12 @@ void test_combos(void) {
 
 void test_handtypes(void) {
 	printf("=== Hand Types ===\n\n");
+	Renderer ren = render_default();
 
 	printf("Pairs via make_pair (13):\n\n");
 	for (int r = 12; r >= 0; r--) {
 		HandType ht = make_pair((uint8_t)r);
-		output_handtype(ht);
+		render_handtype(&ren, ht);
 		printf("  %d combos\n", handtype_combo_count(ht));
 	}
 
@@ -126,7 +128,7 @@ void test_handtypes(void) {
 	for (int h = 12; h >= 1; h--) {
 		for (int l = h - 1; l >= 0; l--) {
 			HandType ht = make_suited((uint8_t)h, (uint8_t)l);
-			output_handtype(ht);
+			render_handtype(&ren, ht);
 			printf(" ");
 			if (++col % 13 == 0) printf("\n");
 		}
@@ -137,7 +139,7 @@ void test_handtypes(void) {
 	for (int h = 12; h >= 1; h--) {
 		for (int l = h - 1; l >= 0; l--) {
 			HandType ht = make_offsuit((uint8_t)h, (uint8_t)l);
-			output_handtype(ht);
+			render_handtype(&ren, ht);
 			printf(" ");
 			if (++col % 13 == 0) printf("\n");
 		}
@@ -147,9 +149,9 @@ void test_handtypes(void) {
 	for (int i = 0; i < 10; i++) {
 		Combo c = combo_from_index(i);
 		HandType ht = combo_to_handtype(c);
-		output_combo(c);
+		render_combo(&ren, c);
 		printf("  -> ");
-		output_handtype(ht);
+		render_handtype(&ren, ht);
 		printf("  combos=%d\n", handtype_combo_count(ht));
 	}
 

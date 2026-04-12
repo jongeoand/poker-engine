@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "session.h"
 #include "command.h"
@@ -70,7 +69,8 @@ static void print_board(Session* sesh) {
 static int cmd_deal(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     deal_players(&sesh->game);
-    
+
+    sesh->last_cards_dealt = toBitmask(sesh->game.playerhands[0]);
     sesh->has_hero = true;
 
     print_hero(sesh);
@@ -81,9 +81,18 @@ static int cmd_street(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     
     deal_street(&sesh->game);
+    sesh->last_cards_dealt = toBitmask(sesh->game.board);
     
     print_board(sesh);
     return CMD_OK;
+}
+
+static int cmd_undodeal(Session* sesh, int argc, char** argv) {
+    //undodeal should get undo the last deal action that accurred
+    // depends on whether board exists or not
+    //
+
+
 }
 
 // print hero combo if Session has_hero, otherwise deal hero hand and print to sink
@@ -105,8 +114,11 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
     
     if (sesh->has_board) { print_board(sesh); return CMD_OK; }
 
+    if (!sesh->has_hero) { deal_players(&sesh->game); }
+
     deal_street(&sesh->game);
     sesh->has_board = true;
+    sesh->last_cards_dealt = toBitmask(sesh->game.board);
     print_board(sesh);
 
     return CMD_OK;

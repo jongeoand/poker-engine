@@ -207,7 +207,7 @@ void test_handmap(void) {
 		printf("  all match: %s\n\n", all_ok ? "OK" : "FAIL");
 	}
 
-	// ---- Test 8: output_rangefield — line count and symbol check ----
+	// ---- Test 8: views_rangefield — line count and symbol check ----
 	// AKs only, CELL_1, SYMSET_ASCII, RENDER_STATE.
 	// Row 0: col 0 = AA (empty → '.'), col 1 = AKs (BEHIND_LIVE → 'L').
 	// Total output: 13 lines (one per row).
@@ -218,14 +218,14 @@ void test_handmap(void) {
 
 		char buf[2048] = {0};
 		FILE* tmp = tmpfile();
-		output_set_sink(tmp);
-		RenderConfig cfg = { RENDER_STATE, SYMSET_ASCII, CELL_1 };
-		output_rangefield(&rf, cfg);
+		Renderer ren8 = render_default();
+		render_set_sink(&ren8, tmp);
+		ren8.mode = RENDER_STATE; ren8.symset = SYMSET_ASCII; ren8.width = CELL_1;
+		views_rangefield(&ren8, &rf);
 		fflush(tmp);
 		rewind(tmp);
 		fread(buf, 1, sizeof(buf) - 1, tmp);
 		fclose(tmp);
-		output_set_sink(stdout);
 
 		int lines = 0;
 		for (int i = 0; buf[i]; i++)
@@ -239,15 +239,15 @@ void test_handmap(void) {
 		bool col0_ok  = (col0_sym == '.');
 		bool col1_ok  = (col1_sym == 'L');
 
-		printf("Test 8 - output_rangefield (CELL_1, ASCII, STATE):\n");
+		printf("Test 8 - views_rangefield (CELL_1, ASCII, STATE):\n");
 		printf("  line count:            %d  (expected 13) %s\n", lines, lines_ok ? "OK" : "FAIL");
 		printf("  row 0 col 0 symbol: '%c'  (expected '.') %s\n", col0_sym, col0_ok ? "OK" : "FAIL");
 		printf("  row 0 col 1 symbol: '%c'  (expected 'L') %s\n\n", col1_sym, col1_ok ? "OK" : "FAIL");
 	}
 
-	// ---- Test 9: output_statefield vs output_rangefield (RENDER_STATE) ----
+	// ---- Test 9: views_statefield vs views_rangefield (RENDER_STATE) ----
 	// On a full range with no dead cards all 169 cells are populated, so
-	// output_statefield must produce the same result as output_rangefield RENDER_STATE.
+	// views_statefield must produce the same result as views_rangefield RENDER_STATE.
 	{
 		HandTypeRange full = htr_full();
 		RangeField rf = hmap_build(&full, 0, board, hero);
@@ -256,30 +256,31 @@ void test_handmap(void) {
 
 		char buf_rf[4096] = {0};
 		char buf_sf[4096] = {0};
-		RenderConfig cfg = { RENDER_STATE, SYMSET_ASCII, CELL_1 };
 
 		FILE* t1 = tmpfile();
-		output_set_sink(t1);
-		output_rangefield(&rf, cfg);
+		Renderer ren9a = render_default();
+		render_set_sink(&ren9a, t1);
+		ren9a.mode = RENDER_STATE; ren9a.symset = SYMSET_ASCII; ren9a.width = CELL_1;
+		views_rangefield(&ren9a, &rf);
 		fflush(t1); rewind(t1);
 		fread(buf_rf, 1, sizeof(buf_rf) - 1, t1);
 		fclose(t1);
 
 		FILE* t2 = tmpfile();
-		output_set_sink(t2);
-		output_statefield(&sf, cfg);
+		Renderer ren9b = render_default();
+		render_set_sink(&ren9b, t2);
+		ren9b.mode = RENDER_STATE; ren9b.symset = SYMSET_ASCII; ren9b.width = CELL_1;
+		views_statefield(&ren9b, &sf);
 		fflush(t2); rewind(t2);
 		fread(buf_sf, 1, sizeof(buf_sf) - 1, t2);
 		fclose(t2);
-
-		output_set_sink(stdout);
 
 		bool match = true;
 		for (int i = 0; buf_rf[i] || buf_sf[i]; i++) {
 			if (buf_rf[i] != buf_sf[i]) { match = false; break; }
 		}
 
-		printf("Test 9 - output_statefield matches output_rangefield (full range, RENDER_STATE):\n");
+		printf("Test 9 - views_statefield matches views_rangefield (full range, RENDER_STATE):\n");
 		printf("  outputs match: %s\n\n", match ? "OK" : "FAIL");
 	}
 
@@ -303,44 +304,56 @@ void test_handmap(void) {
 		printf("Display — board: Ah Kd Qc  hero: Jh Td\n");
 		printf("(A=ahead  C=chop  L=behind_live  D=behind_dead  .=empty)\n\n");
 
-		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_1 });
+		Renderer disp = render_default();
+
+		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_1:\n");
+		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_STATE  SYMSET_UNICODE  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_UNICODE, CELL_1 });
+		printf("views_rangefield  RENDER_STATE  SYMSET_UNICODE  CELL_1:\n");
+		disp.mode = RENDER_STATE; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_PURITY  SYMSET_ASCII  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_PURITY, SYMSET_ASCII, CELL_1 });
+		printf("views_rangefield  RENDER_PURITY  SYMSET_ASCII  CELL_1:\n");
+		disp.mode = RENDER_PURITY; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_PURITY  SYMSET_UNICODE  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_PURITY, SYMSET_UNICODE, CELL_1 });
+		printf("views_rangefield  RENDER_PURITY  SYMSET_UNICODE  CELL_1:\n");
+		disp.mode = RENDER_PURITY; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_DRAW  SYMSET_ASCII  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_DRAW, SYMSET_ASCII, CELL_1 });
+		printf("views_rangefield  RENDER_DRAW  SYMSET_ASCII  CELL_1:\n");
+		disp.mode = RENDER_DRAW; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_DRAW  SYMSET_UNICODE  CELL_1:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_DRAW, SYMSET_UNICODE, CELL_1 });
+		printf("views_rangefield  RENDER_DRAW  SYMSET_UNICODE  CELL_1:\n");
+		disp.mode = RENDER_DRAW; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_2 });
+		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
+		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_2;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_4:\n");
-		output_rangefield(&rf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_4 });
+		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_4:\n");
+		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_4;
+		views_rangefield(&disp, &rf);
 		printf("\n");
 
-		printf("output_statefield  SYMSET_ASCII:\n");
-		output_statefield(&sf, (RenderConfig){ RENDER_STATE, SYMSET_ASCII, CELL_1 });
+		printf("views_statefield  SYMSET_ASCII:\n");
+		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
+		views_statefield(&disp, &sf);
 		printf("\n");
 
-		printf("output_statefield  SYMSET_UNICODE:\n");
-		output_statefield(&sf, (RenderConfig){ RENDER_STATE, SYMSET_UNICODE, CELL_1 });
+		printf("views_statefield  SYMSET_UNICODE:\n");
+		disp.symset = SYMSET_UNICODE;
+		views_statefield(&disp, &sf);
 		printf("\n");
 	}
 }

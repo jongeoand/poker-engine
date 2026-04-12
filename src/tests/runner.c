@@ -18,7 +18,6 @@
 #include "map/handmap.c"
 #include "cli/symbols.c"
 #include "cli/views.c"
-#include "cli/output.c"
 #include "sim/game.c"
 
 #include "tests/test_core.c"

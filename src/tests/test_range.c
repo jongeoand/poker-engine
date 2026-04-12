@@ -1,5 +1,6 @@
 void test_range(void) {
 	printf("=== Range ===\n\n");
+	Renderer ren = render_default();
 
 	Range empty = range_empty();
 	printf("Empty range: %d combos\n", range_count(&empty));
@@ -17,12 +18,24 @@ void test_range(void) {
 		}
 		Card card = make_card(i);
 		printf("  after ");
-		output_card(card);
+		render_card(&ren, card);
 		printf(": %4d combos\n", range_count(&r));
 	}
 
 	printf("\nFull range (%d combos):\n\n", range_count(&r));
-	output_range(&r);
+	bool first = true;
+	for (int i = 0; i < COMBO_RANGE_WORDS; i++) {
+		uint32_t word = r.bits[i];
+		while (word) {
+			int bit = __builtin_ctz(word); word &= word - 1;
+			int idx = i * 32 + bit;
+			if (idx >= COMBO_COUNT) break;
+			if (!first) printf(" ");
+			render_combo(&ren, combo_from_index(idx));
+			first = false;
+		}
+	}
+	printf("\n");
 }
 
 void test_handtype_range(void) {
