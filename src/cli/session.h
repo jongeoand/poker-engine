@@ -10,7 +10,6 @@
    Board and hero are accessed via game.board and game.playerhands[0].
    deck != FULL_DECK indicates at least one card has been dealt. */
 typedef struct Session {
-	HandTypeRange villain_range;
 	Game          game;
 	Renderer      renderer;
 } Session;
