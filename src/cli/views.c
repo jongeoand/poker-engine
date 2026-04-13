@@ -124,23 +124,6 @@ void views_statefield(Renderer* rend, const StateField* f) {
 	}
 }
 
-void views_board_profile(Renderer* rend, const HtrBoardProfile* p) {
-	FILE* out = render_get_sink(rend);
-	fprintf(out, "Board profile (%d live types):\n", p->total);
-	for (int r = STRAIGHTFLUSH; r >= PAIRED; r--) {
-		if (!p->made[r]) continue;
-		fprintf(out, "  %-16s  %3d  (%5.1f%%)\n",
-			hand_rank_str((HandRank)r), p->made[r],
-			p->total > 0 ? 100.0 * p->made[r] / p->total : 0.0);
-	}
-	fprintf(out, "  %-16s  %3d  (%5.1f%%)\n",
-		"Draw", p->draw,
-		p->total > 0 ? 100.0 * p->draw / p->total : 0.0);
-	fprintf(out, "  %-16s  %3d  (%5.1f%%)\n",
-		"Missed (air)", p->missed,
-		p->total > 0 ? 100.0 * p->missed / p->total : 0.0);
-}
-
 void views_legend(Renderer* rend) {
 	FILE* out = render_get_sink(rend);
 	switch (rend->mode) {

@@ -20,11 +20,6 @@ void print_struct_sizes(void) {
 	printf("  ComboStateCounts:%2zu bytes\n", sizeof(ComboStateCounts));
 	printf("\n");
 
-	printf("  -- htrange profiles --\n");
-	printf("  HtrBoardProfile:%2zu bytes\n", sizeof(HtrBoardProfile));
-	printf("  HtrEquitySplit: %2zu bytes\n", sizeof(HtrEquitySplit));
-	printf("\n");
-
 	printf("  -- engine masks --\n");
 	printf("  SuitMasks:      %2zu bytes\n", sizeof(SuitMasks));
 	printf("  PairMasks:      %2zu bytes\n", sizeof(PairMasks));
@@ -42,6 +37,10 @@ void print_struct_sizes(void) {
 
 	printf("  -- cli --\n");
 	printf("  Renderer:       %2zu bytes\n", sizeof(Renderer));
+	printf("  TextPanel:      %2zu bytes\n", sizeof(TextPanel));
+	printf("  Command:        %2zu bytes\n", sizeof(Command));
+	printf("  CommandTable:   %2zu bytes\n", sizeof(CommandTable));
+	printf("  Session:        %2zu bytes\n", sizeof(Session));
 	printf("\n");
 }
 
