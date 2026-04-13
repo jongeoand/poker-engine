@@ -87,8 +87,6 @@ The goal is a geometric view of range interaction, not just scalar metrics.
 
 ## Design characteristics
 
-**Compact representations** — a full 1,326-combo range fits in 168 bytes; hand-type ranges (169 equivalence classes) fit in 24 bytes. These structures keep large numbers of analyses cache-friendly.
-
 **Exact combinatorics where feasible** — equity is computed via exact enumeration when ≤2 cards remain, and adaptive Monte Carlo (10k samples) otherwise.
 
 **Bit-level performance** — bitwise encodings allow fast deck operations, constant-time hand classification, and efficient iteration over combo sets. BMI2 instructions (`_pdep_u64`) accelerate bit extraction when available, with a portable fallback.
