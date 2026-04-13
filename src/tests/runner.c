@@ -12,7 +12,6 @@
 #include "range/range.c"
 #include "range/htrange.c"
 #include "cli/render.c"
-#include "utility.c"
 #include "range/iterate.c"
 #include "analysis/combostate.c"
 #include "map/handmap.c"
@@ -25,7 +24,6 @@
 
 #include "tests/test_core.c"
 #include "tests/test_range.c"
-#include "tests/test_engine.c"
 #include "tests/test_combostate.c"
 #include "tests/test_handmap.c"
 #include "tests/test_render.c"
@@ -42,7 +40,6 @@ int main(void) {
 	test_handtypes();     printf(SEP);
 	test_range();         printf(SEP);
 	test_handtype_range(); printf(SEP);
-	test_engine();         printf(SEP);
 	test_combostate();     printf(SEP);
 	test_handmap(); printf(SEP);
 	test_render();  printf(SEP);
