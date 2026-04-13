@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "session.h"
@@ -25,7 +26,20 @@ Session session_default(void) {
     s.has_hero         = false;
     s.has_board        = false;
     s.last_cards_dealt = 0;
+
+    s.panels        = NULL;
+    s.panel_count   = 0;
+    s.panel_capacity = 0;
     return s;
+}
+
+void session_free(Session* sesh) {
+    for (int32_t i = 0; i < sesh->panel_count; i++)
+        panel_free(sesh->panels[i]);
+    free(sesh->panels);
+    sesh->panels        = NULL;
+    sesh->panel_count   = 0;
+    sesh->panel_capacity = 0;
 }
 
 void start_session(Session* sesh) {
@@ -40,6 +54,8 @@ void start_session(Session* sesh) {
 		int rc = cmd_dispatch_line(&session_table, line, sesh);
 		if (rc == CMD_QUIT) break;
 	}
+
+    session_free(sesh);
 }
 
 // Session specific helpers
@@ -261,12 +277,13 @@ static int cmd_project(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
-/* reset  — fresh deck, cleared board and hands, empty range */
+/* reset  — fresh deck, cleared board and hands, cleared panels */
 static int cmd_reset(Session* sesh, int argc, char** argv) {
 	(void)argc; (void)argv;
 	sesh->game      = make_game(2);
 	sesh->has_hero  = false;
 	sesh->has_board = false;
+	session_free(sesh);
 	fprintf(render_get_sink(&sesh->renderer), "session reset\n");
 	return CMD_OK;
 }

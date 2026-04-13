@@ -357,4 +357,57 @@ void test_panel(void) {
         panel_free(p);
     }
 
+    /* ---- Test 16: join two rangefield panels from different flops ---- */
+    {
+        Renderer r = render_default();
+        r.symset = SYMSET_UNICODE;
+        r.width  = CELL_2;
+
+        /* Flop 1 */
+        Game g1 = make_game(2);
+        deal_players(&g1);
+        deal_street(&g1);
+
+        Combo    hero1    = g1.playerhands[0];
+        uint64_t bitmask1 = toBitmask(hero1.a) | toBitmask(hero1.b);
+        uint64_t dead1    = bitmask1 | g1.board;
+
+        HandTypeRange full = htr_full();
+        RangeField rf1 = hmap_build(&full, dead1, g1.board, bitmask1);
+
+        TextPanel* p1 = views_rangefield(&r, &rf1);
+        printf("Flop 1 rangefield:\n");
+        panel_print(p1, &r);
+        printf("\n");
+
+        int32_t w1 = panel_width(p1);
+
+        /* Flop 2 */
+        Game g2 = make_game(2);
+        deal_players(&g2);
+        deal_street(&g2);
+
+        Combo    hero2    = g2.playerhands[0];
+        uint64_t bitmask2 = toBitmask(hero2.a) | toBitmask(hero2.b);
+        uint64_t dead2    = bitmask2 | g2.board;
+
+        RangeField rf2 = hmap_build(&full, dead2, g2.board, bitmask2);
+        TextPanel* p2 = views_rangefield(&r, &rf2);
+
+        /* Join and display */
+        TextPanel* joined = panel_join_consume(p1, p2, 2);
+
+        printf("Joined (flop 1 | flop 2):\n");
+        panel_print(joined, &r);
+        printf("\n");
+
+        bool height_ok = (panel_height(joined) == 13);
+        bool width_ok  = (panel_width(joined) > w1);
+
+        printf("Test 16 - join two rangefield panels:\n");
+        printf("  height == 13:          %s\n",   height_ok ? "OK" : "FAIL");
+        printf("  joined wider than p1:  %s\n\n", width_ok  ? "OK" : "FAIL");
+
+        panel_free(joined);
+    }
 }
