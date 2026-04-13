@@ -88,7 +88,7 @@ void test_combos(void) {
 	printf("\nTotal: %d combos\n\n", count);
 
 	printf("Enumeration via combo_from_index(i):\n\n");
-	for (int i = 0; i < COMBO_COUNT; i++) {
+	for (int i = 0; i < 1326; i++) {
 		Combo c = combo_from_index(i);
 		render_combo(&ren, c);
 		printf(" ");
