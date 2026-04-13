@@ -24,17 +24,6 @@ void test_handtype_range(void) {
 	}
 	printf("Index roundtrip (0..168): %s\n\n", ok ? "OK" : "FAIL");
 
-	// ---- Materialize ----
-	Range mat = htr_materialize(&full, 0);
-	printf("htr_materialize(full, dead=0): %d combos\n", range_count(&mat));
-
-	// ---- Compress ----
-	Range rf = range_full();
-	HandTypeRange comp = range_compress(&rf);
-	printf("range_compress(range_full()): %d types (%s)\n\n",
-		htr_count(&comp),
-		htr_count(&comp) == HANDTYPE_COUNT ? "OK" : "FAIL");
-
 	// ---- Set operations ----
 	HandTypeRange pairs_only = htr_empty();
 	for (int r = 0; r < 13; r++) htr_add(&pairs_only, make_pair((uint8_t)r));

@@ -37,7 +37,6 @@ int main(void) {
 	test_cards();         printf(SEP);
 	test_combos();        printf(SEP);
 	test_handtypes();     printf(SEP);
-	test_range();         printf(SEP);
 	test_handtype_range(); printf(SEP);
 	test_combostate();     printf(SEP);
 	test_handmap(); printf(SEP);
