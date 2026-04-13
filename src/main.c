@@ -12,7 +12,6 @@
 #include "range/range.c"
 #include "range/htrange.c"
 #include "cli/render.c"
-#include "utility.c"
 #include "range/iterate.c"
 #include "analysis/combostate.c"
 #include "map/handmap.c"
