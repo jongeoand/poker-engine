@@ -258,39 +258,18 @@ void test_panel(void) {
         panel_free(p);
     }
 
-    /* ---- Test 12: open_memstream capture into panel ---- */
+    /* ---- Test 12: views_htr_grid returns a TextPanel directly ---- */
     {
-        /* Capture a views_htr_grid call into a panel */
         HandTypeRange full = htr_full();
+        TextPanel* p = views_htr_grid(&full);
 
-        char*  buf = NULL;
-        size_t len = 0;
-        FILE*  mem = open_memstream(&buf, &len);
-        Renderer r = render_default();
-        render_set_sink(&r, mem);
-        views_htr_grid(&r, &full);
-        fclose(mem);
-
-        TextPanel* p = panel_create();
-        char* cursor = buf;
-        char* nl;
-        while ((nl = strchr(cursor, '\n')) != NULL) {
-            *nl = '\0';
-            panel_add_line(p, cursor);
-            cursor = nl + 1;
-        }
-        if (*cursor) panel_add_line(p, cursor);
-        free(buf);
-
-        /* htr_grid emits 13 rows + 1 trailing blank line */
-        bool height_ok = (panel_height(p) == 14);
+        bool height_ok = (panel_height(p) == 13);
         bool width_ok  = (panel_width(p)  >  0);
 
-        printf("Test 12 - capture views_htr_grid into panel:\n");
-        printf("  height == 14 (13 rows + blank): %s\n", height_ok ? "OK" : "FAIL");
+        printf("Test 12 - views_htr_grid returns TextPanel:\n");
+        printf("  height == 13: %s\n",  height_ok ? "OK" : "FAIL");
         printf("  width > 0:    %s\n\n", width_ok  ? "OK" : "FAIL");
 
-        /* Visual: print captured panel to stdout */
         Renderer out = render_default();
         panel_print(p, &out);
 

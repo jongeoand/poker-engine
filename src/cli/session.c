@@ -5,6 +5,7 @@
 #include "session.h"
 #include "command.h"
 #include "views.h"
+#include "panel.h"
 #include "map/handmap.h"
 #include "iterate.h"
 
@@ -21,8 +22,9 @@ Session session_default(void) {
     s.renderer.symset = SYMSET_UNICODE;
     s.renderer.width = CELL_2;
 
-    s.has_hero  = false;
-    s.has_board = false;
+    s.has_hero         = false;
+    s.has_board        = false;
+    s.last_cards_dealt = 0;
     return s;
 }
 
@@ -79,17 +81,42 @@ static int cmd_deal(Session* sesh, int argc, char** argv) {
 
 static int cmd_street(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    
+
+    uint64_t before = sesh->game.board;
     deal_street(&sesh->game);
-    sesh->last_cards_dealt = sesh->game.board;
-    
+    sesh->last_cards_dealt = sesh->game.board & ~before;
+
     print_board(sesh);
     return CMD_OK;
 }
 
 static int cmd_undodeal(Session* sesh, int argc, char** argv) {
-    (void)sesh; (void)argc; (void)argv;
-    /* TODO: undo last deal action (depends on whether board exists) */
+    (void)argc; (void)argv;
+    FILE* out = render_get_sink(&sesh->renderer);
+
+    if (!sesh->has_hero || sesh->last_cards_dealt == 0) {
+        fprintf(out, "nothing to undo\n");
+        return CMD_ERR;
+    }
+
+    if (sesh->has_board) {
+        /* Undo the last street: return its cards to the deck and strip from board. */
+        sesh->game.deck  |=  sesh->last_cards_dealt;
+        sesh->game.board &= ~sesh->last_cards_dealt;
+        sesh->last_cards_dealt = 0;
+        if (sesh->game.board == 0)
+            sesh->has_board = false;
+        print_board(sesh);
+    } else {
+        /* Undo deal_players: reset the game entirely so the full deck is restored
+           (villain's cards are also removed from the deck by deal_players and are
+           not tracked individually, so make_game is the only clean restore path). */
+        sesh->game             = make_game(sesh->game.headcount);
+        sesh->last_cards_dealt = 0;
+        sesh->has_hero         = false;
+        fprintf(out, "hero hand cleared\n");
+    }
+
     return CMD_OK;
 }
 
@@ -191,11 +218,11 @@ static int cmd_analyze(Session* sesh, int argc, char** argv) {
     hmap_project_state(&range_field, &plane);
 
     fprintf(out, "RangeField: \n");
-    views_rangefield(&sesh->renderer, &range_field);
+    { TextPanel* _p = views_rangefield(&sesh->renderer, &range_field); panel_print(_p, &sesh->renderer); panel_free(_p); }
     render_blank(&sesh->renderer);
 
     fprintf(out, "StateField: \n");
-    views_statefield(&sesh->renderer, &plane);
+    { TextPanel* _p = views_statefield(&sesh->renderer, &plane); panel_print(_p, &sesh->renderer); panel_free(_p); }
     return CMD_OK;
 }
 
@@ -223,12 +250,12 @@ static int cmd_project(Session* sesh, int argc, char** argv) {
     hmap_project_state(&range_field, &plane);
 
     fprintf(out, "RangeField: \n");
-    views_rangefield(&sesh->renderer, &range_field);
+    { TextPanel* _p = views_rangefield(&sesh->renderer, &range_field); panel_print(_p, &sesh->renderer); panel_free(_p); }
     render_blank(&sesh->renderer);
 
     for (int i = 0; i < n; i++) {
         fprintf(out, "StateField %d \n", i);
-        views_statefield(&sesh->renderer, &plane);
+        { TextPanel* _p = views_statefield(&sesh->renderer, &plane); panel_print(_p, &sesh->renderer); panel_free(_p); }
     }
 
     return CMD_OK;
