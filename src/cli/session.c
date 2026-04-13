@@ -27,9 +27,7 @@ Session session_default(void) {
     s.has_board        = false;
     s.last_cards_dealt = 0;
 
-    s.panels        = NULL;
-    s.panel_count   = 0;
-    s.panel_capacity = 0;
+    s.panel        = NULL;
     return s;
 }
 
@@ -38,8 +36,6 @@ void session_free(Session* sesh) {
         panel_free(sesh->panels[i]);
     free(sesh->panels);
     sesh->panels        = NULL;
-    sesh->panel_count   = 0;
-    sesh->panel_capacity = 0;
 }
 
 void start_session(Session* sesh) {

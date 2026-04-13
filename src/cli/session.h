@@ -23,9 +23,7 @@ typedef struct Session {
 
     uint64_t last_cards_dealt;
 
-    TextPanel**  panels;
-    int32_t      panel_count;
-    int32_t      panel_capacity;
+    TextPanel*  panel;
 } Session;
 
 /* Initialize a default session: 2-player game, default renderer, empty range. */
