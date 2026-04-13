@@ -20,6 +20,8 @@
 #include "cli/views.c"
 #include "cli/panel.c"
 #include "sim/game.c"
+#include "cli/session.h"
+#include "cli/command.h"
 
 #include "tests/test_core.c"
 #include "tests/test_range.c"

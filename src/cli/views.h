@@ -17,9 +17,6 @@ void views_rangefield(Renderer* r, const RangeField* f);
 /* Dominant-state-only grid — respects r->symset. */
 void views_statefield(Renderer* r, const StateField* f);
 
-/* Hand rank distribution table. */
-void views_board_profile(Renderer* r, const HtrBoardProfile* p);
-
 /* Symbol legend for the current render mode and symbol set. */
 void views_legend(Renderer* r);
 
