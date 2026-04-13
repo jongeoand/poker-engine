@@ -6,55 +6,59 @@ void test_render(void) {
 
     uint64_t board = game.board;
     Combo holecards = game.playerhands[0];
-    
+
     uint64_t hero = combo_toBitmask(holecards);
     uint64_t dead = board | hero;
 
     HandTypeRange full = htr_full();
 
     RangeField rdata = hmap_build(&full, dead, board, hero);
-    StateField sdata; hmap_project_state(&rdata, & sdata);
+    StateField sdata; hmap_project_state(&rdata, &sdata);
 
     Renderer write = render_default();
 
+#define VPRINT(panel_expr, rend) do { TextPanel* _vp = (panel_expr); panel_print(_vp, (rend)); panel_free(_vp); } while(0)
+
     render_heading(&write, "test render heading");
-    
-    views_htr_grid(&write, &full); printf("\n");
+
+    VPRINT(views_htr_grid(&full), &write); printf("\n");
 
     render_heading(&write, "default renderer");
-    
-    views_rangefield(&write, &rdata);
-	
+
+    VPRINT(views_rangefield(&write, &rdata), &write);
+
 	printf("\n");
-    views_statefield(&write, &sdata);  
+    VPRINT(views_statefield(&write, &sdata), &write);
 
     render_heading(&write, "symset unicode");
     write.symset = SYMSET_UNICODE;
-    
-    views_rangefield(&write, &rdata);
+
+    VPRINT(views_rangefield(&write, &rdata), &write);
     render_blank(&write);
-    views_statefield(&write, &sdata);
+    VPRINT(views_statefield(&write, &sdata), &write);
 
     write.symset = SYMSET_ASCII;
     write.mode = RENDER_PURITY;
 
     render_heading(&write, "render mode: purity");
-    
-    views_rangefield(&write, &rdata);
+
+    VPRINT(views_rangefield(&write, &rdata), &write);
     render_blank(&write);
 
     write.symset = SYMSET_UNICODE;
-    views_rangefield(&write, &rdata);
-    
+    VPRINT(views_rangefield(&write, &rdata), &write);
+
     render_blank(&write);
 
     render_heading(&write, "render mode: draw");
     write.symset = SYMSET_ASCII;
     write.mode = RENDER_DRAW;
 
-    views_rangefield(&write, &rdata);
+    VPRINT(views_rangefield(&write, &rdata), &write);
     render_blank(&write);
 
     write.symset = SYMSET_UNICODE;
-    views_rangefield(&write, &rdata);
+    VPRINT(views_rangefield(&write, &rdata), &write);
+
+#undef VPRINT
 }

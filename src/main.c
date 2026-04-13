@@ -16,6 +16,7 @@
 #include "analysis/combostate.c"
 #include "map/handmap.c"
 #include "cli/symbols.c"
+#include "cli/panel.c"
 #include "cli/views.c"
 #include "sim/game.c"
 #include "cli/command.c"

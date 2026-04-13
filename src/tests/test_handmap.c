@@ -216,33 +216,23 @@ void test_handmap(void) {
 		htr_add(&htr, make_suited((uint8_t)ACE, (uint8_t)KING));
 		RangeField rf = hmap_build(&htr, 0, board, hero);
 
-		char buf[2048] = {0};
-		FILE* tmp = tmpfile();
 		Renderer ren8 = render_default();
-		render_set_sink(&ren8, tmp);
 		ren8.mode = RENDER_STATE; ren8.symset = SYMSET_ASCII; ren8.width = CELL_1;
-		views_rangefield(&ren8, &rf);
-		fflush(tmp);
-		rewind(tmp);
-		fread(buf, 1, sizeof(buf) - 1, tmp);
-		fclose(tmp);
-
-		int lines = 0;
-		for (int i = 0; buf[i]; i++)
-			if (buf[i] == '\n') lines++;
+		TextPanel* p8 = views_rangefield(&ren8, &rf);
 
 		// CELL_1: each cell is 2 chars (symbol + space). Col 0 at byte 0, col 1 at byte 2.
-		char col0_sym = buf[0];
-		char col1_sym = buf[2];
+		bool lines_ok = (panel_height(p8) == 13);
+		char col0_sym = p8->line_count > 0 ? p8->lines[0][0] : ' ';
+		char col1_sym = p8->line_count > 0 ? p8->lines[0][2] : ' ';
 
-		bool lines_ok = (lines == 13);
-		bool col0_ok  = (col0_sym == '.');
-		bool col1_ok  = (col1_sym == 'L');
+		bool col0_ok = (col0_sym == '.');
+		bool col1_ok = (col1_sym == 'L');
 
 		printf("Test 8 - views_rangefield (CELL_1, ASCII, STATE):\n");
-		printf("  line count:            %d  (expected 13) %s\n", lines, lines_ok ? "OK" : "FAIL");
+		printf("  line count:            %d  (expected 13) %s\n", panel_height(p8), lines_ok ? "OK" : "FAIL");
 		printf("  row 0 col 0 symbol: '%c'  (expected '.') %s\n", col0_sym, col0_ok ? "OK" : "FAIL");
 		printf("  row 0 col 1 symbol: '%c'  (expected 'L') %s\n\n", col1_sym, col1_ok ? "OK" : "FAIL");
+		panel_free(p8);
 	}
 
 	// ---- Test 9: views_statefield vs views_rangefield (RENDER_STATE) ----
@@ -254,34 +244,19 @@ void test_handmap(void) {
 		StateField sf;
 		hmap_project_state(&rf, &sf);
 
-		char buf_rf[4096] = {0};
-		char buf_sf[4096] = {0};
+		Renderer ren9 = render_default();
+		ren9.mode = RENDER_STATE; ren9.symset = SYMSET_ASCII; ren9.width = CELL_1;
+		TextPanel* p_rf = views_rangefield(&ren9, &rf);
+		TextPanel* p_sf = views_statefield(&ren9, &sf);
 
-		FILE* t1 = tmpfile();
-		Renderer ren9a = render_default();
-		render_set_sink(&ren9a, t1);
-		ren9a.mode = RENDER_STATE; ren9a.symset = SYMSET_ASCII; ren9a.width = CELL_1;
-		views_rangefield(&ren9a, &rf);
-		fflush(t1); rewind(t1);
-		fread(buf_rf, 1, sizeof(buf_rf) - 1, t1);
-		fclose(t1);
-
-		FILE* t2 = tmpfile();
-		Renderer ren9b = render_default();
-		render_set_sink(&ren9b, t2);
-		ren9b.mode = RENDER_STATE; ren9b.symset = SYMSET_ASCII; ren9b.width = CELL_1;
-		views_statefield(&ren9b, &sf);
-		fflush(t2); rewind(t2);
-		fread(buf_sf, 1, sizeof(buf_sf) - 1, t2);
-		fclose(t2);
-
-		bool match = true;
-		for (int i = 0; buf_rf[i] || buf_sf[i]; i++) {
-			if (buf_rf[i] != buf_sf[i]) { match = false; break; }
-		}
+		bool match = (panel_height(p_rf) == panel_height(p_sf));
+		for (int i = 0; match && i < panel_height(p_rf); i++)
+			if (strcmp(p_rf->lines[i], p_sf->lines[i]) != 0) match = false;
 
 		printf("Test 9 - views_statefield matches views_rangefield (full range, RENDER_STATE):\n");
 		printf("  outputs match: %s\n\n", match ? "OK" : "FAIL");
+		panel_free(p_rf);
+		panel_free(p_sf);
 	}
 
 	// ---- Display: visual render of all modes ----
@@ -306,54 +281,48 @@ void test_handmap(void) {
 
 		Renderer disp = render_default();
 
+#define VPRINT(panel_expr, rend) do { TextPanel* _vp = (panel_expr); panel_print(_vp, (rend)); panel_free(_vp); } while(0)
+
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_PURITY  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_PURITY; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_PURITY  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_PURITY; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_DRAW  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_DRAW; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_DRAW  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_DRAW; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_2;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_4:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_4;
-		views_rangefield(&disp, &rf);
-		printf("\n");
+		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
 
 		printf("views_statefield  SYMSET_ASCII:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		views_statefield(&disp, &sf);
-		printf("\n");
+		VPRINT(views_statefield(&disp, &sf), &disp); printf("\n");
 
 		printf("views_statefield  SYMSET_UNICODE:\n");
 		disp.symset = SYMSET_UNICODE;
-		views_statefield(&disp, &sf);
-		printf("\n");
+		VPRINT(views_statefield(&disp, &sf), &disp); printf("\n");
+
+#undef VPRINT
 	}
 }
