@@ -7,7 +7,6 @@ void print_struct_sizes(void) {
 	printf("  HandType:       %2zu bytes\n", sizeof(HandType));
 	printf("  DrawInfo:       %2zu bytes\n", sizeof(DrawInfo));
 	printf("  Outs:           %2zu bytes\n", sizeof(Outs));
-	printf("  Range:          %2zu bytes\n", sizeof(Range));
 	printf("  HandTypeRange:  %2zu bytes\n", sizeof(HandTypeRange));
 	printf("\n");
 

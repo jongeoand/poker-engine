@@ -23,14 +23,12 @@ typedef struct Session {
 
     uint64_t last_cards_dealt;
 
-    TextPanel*  panel;
+    uint64_t    street_boards[3];   /* cumulative board mask after each street: [0]=flop, [1]=turn, [2]=river */
+    int         street_count;       /* number of streets dealt (0–3) */
 } Session;
 
 /* Initialize a default session: 2-player game, default renderer, empty range. */
 Session session_default(void);
-
-/* Free all heap resources owned by the session (panels list). */
-void session_free(Session* sesh);
 
 /* Start the interactive REPL loop. Returns when the user quits. */
 void start_session(Session* sesh);

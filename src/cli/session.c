@@ -27,15 +27,8 @@ Session session_default(void) {
     s.has_board        = false;
     s.last_cards_dealt = 0;
 
-    s.panel        = NULL;
+    s.street_count = 0;
     return s;
-}
-
-void session_free(Session* sesh) {
-    for (int32_t i = 0; i < sesh->panel_count; i++)
-        panel_free(sesh->panels[i]);
-    free(sesh->panels);
-    sesh->panels        = NULL;
 }
 
 void start_session(Session* sesh) {
@@ -51,7 +44,6 @@ void start_session(Session* sesh) {
 		if (rc == CMD_QUIT) break;
 	}
 
-    session_free(sesh);
 }
 
 // Session specific helpers
@@ -94,9 +86,16 @@ static int cmd_deal(Session* sesh, int argc, char** argv) {
 static int cmd_street(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
 
+    if (sesh->street_count >= 3) {
+        fprintf(render_get_sink(&sesh->renderer), "all streets dealt\n");
+        return CMD_ERR;
+    }
+
     uint64_t before = sesh->game.board;
     deal_street(&sesh->game);
     sesh->last_cards_dealt = sesh->game.board & ~before;
+    sesh->street_boards[sesh->street_count++] = sesh->game.board;
+    sesh->has_board = true;
 
     print_board(sesh);
     return CMD_OK;
@@ -116,6 +115,7 @@ static int cmd_undodeal(Session* sesh, int argc, char** argv) {
         sesh->game.deck  |=  sesh->last_cards_dealt;
         sesh->game.board &= ~sesh->last_cards_dealt;
         sesh->last_cards_dealt = 0;
+        if (sesh->street_count > 0) sesh->street_count--;
         if (sesh->game.board == 0)
             sesh->has_board = false;
         print_board(sesh);
@@ -151,11 +151,12 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
     
     if (sesh->has_board) { print_board(sesh); return CMD_OK; }
 
-    if (!sesh->has_hero) { deal_players(&sesh->game); }
+    if (!sesh->has_hero) { deal_players(&sesh->game); sesh->has_hero = true; }
 
     deal_street(&sesh->game);
     sesh->has_board = true;
     sesh->last_cards_dealt = sesh->game.board;
+    sesh->street_boards[sesh->street_count++] = sesh->game.board;
     print_board(sesh);
 
     return CMD_OK;
@@ -273,13 +274,50 @@ static int cmd_project(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+static int cmd_layout(Session* sesh, int argc, char** argv) {
+    (void)argc; (void)argv;
+
+    if (!sesh->has_hero) { deal_players(&sesh->game); sesh->has_hero = true; }
+
+    if (sesh->street_count == 0) {
+        deal_street(&sesh->game);
+        sesh->street_boards[sesh->street_count++] = sesh->game.board;
+        sesh->has_board = true;
+    }
+
+    Combo    hero        = sesh->game.playerhands[0];
+    Combo    villain     = sesh->game.playerhands[1];
+    uint64_t heromask    = toBitmask(hero.a)    | toBitmask(hero.b);
+    uint64_t villainmask = toBitmask(villain.a) | toBitmask(villain.b);
+
+    HandTypeRange full = htr_full();
+    TextPanel* view = NULL;
+
+    for (int i = 0; i < sesh->street_count; i++) {
+        uint64_t board = sesh->street_boards[i];
+
+        RangeField rf_hero    = hmap_build(&full, heromask    | board, board, heromask);
+        RangeField rf_villain = hmap_build(&full, villainmask | board, board, villainmask);
+
+        TextPanel* p_hero    = views_rangefield(&sesh->renderer, &rf_hero);
+        TextPanel* p_villain = views_rangefield(&sesh->renderer, &rf_villain);
+        TextPanel* stacked   = panel_stack_consume(p_hero, p_villain);
+
+        view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
+    }
+
+    panel_print(view, &sesh->renderer);
+    panel_free(view);
+    return CMD_OK;
+}
+
 /* reset  — fresh deck, cleared board and hands, cleared panels */
 static int cmd_reset(Session* sesh, int argc, char** argv) {
 	(void)argc; (void)argv;
-	sesh->game      = make_game(2);
-	sesh->has_hero  = false;
-	sesh->has_board = false;
-	session_free(sesh);
+	sesh->game         = make_game(2);
+	sesh->has_hero     = false;
+	sesh->has_board    = false;
+	sesh->street_count = 0;
 	fprintf(render_get_sink(&sesh->renderer), "session reset\n");
 	return CMD_OK;
 }
@@ -307,6 +345,7 @@ static const Command session_cmds[] = {
 	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField + StateField vs hero + board",         cmd_analyze        },
 	{ "project",  'p', "project [n]",                 "project StateField n times (default 1)",                cmd_project        },
+	{ "layout",   'l', "layout",                       "multi-street rangefield view (hero above villain, streets side by side)", cmd_layout },
 	{ "reset",   'c', "reset",                       "clear all session state (deck, range)",                 cmd_reset          },
 	{ "help",    '?', "help",                        "print this command list",                               cmd_help           },
 	{ "quit",    'q', "quit",                        "exit session",                                          cmd_quit           },

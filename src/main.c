@@ -9,7 +9,6 @@
 #include "engine/engine.c"
 #include "engine/eval.c"
 #include "engine/draws.c"
-#include "range/range.c"
 #include "range/htrange.c"
 #include "cli/render.c"
 #include "range/iterate.c"

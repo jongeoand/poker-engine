@@ -1,7 +1,6 @@
 #ifndef HTRANGE_H
 #define HTRANGE_H
 
-#include "range.h"
 #include "handtype.h"
 #include "eval.h"
 #include "draws.h"
@@ -33,12 +32,5 @@ int htr_combo_count_exact(const HandTypeRange* h, uint64_t dead);
 HandTypeRange htr_union(const HandTypeRange* a, const HandTypeRange* b);
 HandTypeRange htr_intersect(const HandTypeRange* a, const HandTypeRange* b);
 HandTypeRange htr_subtract(const HandTypeRange* a, const HandTypeRange* b);
-
-// ---- Conversion ----
-// Materialize: expand each live hand type into specific combos, filtered by dead.
-// dead = board | hero_holecards (any card whose presence blocks combos).
-Range         htr_materialize(const HandTypeRange* h, uint64_t dead);
-// Compress: lossy — marks a type's bit if any of its combos appear in r.
-HandTypeRange range_compress(const Range* r);
 
 #endif
