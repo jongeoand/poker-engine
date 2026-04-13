@@ -20,11 +20,13 @@
 #include "sim/game.c"
 
 #include "tests/visual/visual_test.c"
+#include "tests/visual/visual_experiments.c"
 
 #define SEP "============================================================\n"
 
 int main(void) {
 	srand((unsigned int)time(NULL));
-	visual_test(); printf(SEP);
+	visual_test();         printf(SEP);
+	visual_experiments();  printf(SEP);
 	return 0;
 }
