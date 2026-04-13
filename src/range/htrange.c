@@ -91,32 +91,3 @@ HandTypeRange htr_subtract(const HandTypeRange* a, const HandTypeRange* b) {
 	for (int i = 0; i < HT_RANGE_WORDS; i++) r.bits[i] = a->bits[i] & ~b->bits[i];
 	return r;
 }
-
-// ---- Conversion ----
-
-Range htr_materialize(const HandTypeRange* h, uint64_t dead) {
-	Range r = range_empty();
-	Combo buf[12];
-	for (int i = 0; i < HANDTYPE_COUNT; i++) {
-		if (!htr_btst(h, i)) continue;
-		HandType ht = handtype_from_index(i);
-		int n = handtype_combos(ht, dead, buf);
-		for (int j = 0; j < n; j++) range_add(&r, buf[j]);
-	}
-	return r;
-}
-
-HandTypeRange range_compress(const Range* r) {
-	HandTypeRange h = htr_empty();
-	for (int w = 0; w < COMBO_RANGE_WORDS; w++) {
-		uint32_t word = r->bits[w];
-		while (word) {
-			int bit = __builtin_ctz(word);
-			word &= word - 1;
-			int idx = w * 32 + bit;
-			if (idx >= COMBO_COUNT) break;
-			htr_bset(&h, handtype_index(combo_to_handtype(combo_from_index(idx))));
-		}
-	}
-	return h;
-}
