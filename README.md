@@ -23,7 +23,8 @@ The central idea is to treat hand space as a structured domain and compute *fiel
 
 These maps make it easier to reason about bluffing regions, thin value opportunities, range advantage, and strategic sensitivity to future cards.
 
-Categorical mapping has been implemented, but no functionality for scalar / transition / frontier maps exists yet. 
+Categorical mapping has been implemented, and some early work on scalar equity maps has been done.
+No code exists yet for pressure, volatility, transition or frontier maps yet.
 
 ## Current status
 
@@ -36,15 +37,17 @@ The mathematical core of the engine is largely implemented:
 - combo-state classification
 - hand lattice mapping
 
-Active development is focused on the CLI layer — the interactive session, panel-based layout engine, and multi-view analysis output. The panel system was recently implemented and will support richer dashboards combining hand maps, summaries, transition reports, and debug views. Not everything is wired up yet.
+Active development is focused on the CLI layer — the interactive session, panel-based layout engine, and multi-view analysis output. The panel system was recently implemented and will support richer dashboards combining hand maps, summaries, transition reports, and debug views. Not everything is wired up yet; there is some basic panel integration with interactive sessions, but it is not yet complete.
 
+Another area of active development is implementing more mapping and symbolic representations for the visual grammar of the CLI. 
 ## Build
 
 Requires GCC with C11 support. No external dependencies.
 
 ```
-make        # build ./poker
-make test   # build ./poker_test and run tests
+make             # build ./poker
+make test        # build ./poker_test and run tests
+make test visual # build ./poker_visual and run visual tests 
 ```
 
 ## Usage
