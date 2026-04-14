@@ -31,7 +31,6 @@ void print_struct_sizes(void) {
 	printf("  -- hand map --\n");
 	printf("  HMapCell:       %2zu bytes\n", sizeof(HMapCell));
 	printf("  RangeField:     %2zu bytes\n", sizeof(RangeField));
-	printf("  StateField:     %2zu bytes\n", sizeof(StateField));
 	printf("\n");
 
 	printf("  -- cli --\n");

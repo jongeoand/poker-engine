@@ -51,5 +51,4 @@ Context get_context(const Session* sesh);
 Context get_vcontext(const Session* sesh);
 
 TextPanel* make_rangefield_window(Context ctx, Renderer* r);
-TextPanel* make_statefield_window(const RangeField* f, Renderer* r);
 #endif

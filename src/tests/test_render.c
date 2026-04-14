@@ -13,7 +13,6 @@ void test_render(void) {
     HandTypeRange full = htr_full();
 
     RangeField rdata = hmap_build(&full, dead, board, hero);
-    StateField sdata; hmap_project_state(&rdata, &sdata);
 
     Renderer write = render_default();
 
@@ -28,15 +27,11 @@ void test_render(void) {
     VPRINT(views_rangefield(&write, &rdata), &write);
 
 	printf("\n");
-    VPRINT(views_statefield(&write, &sdata), &write);
-
     render_heading(&write, "symset unicode");
     write.symset = SYMSET_UNICODE;
 
     VPRINT(views_rangefield(&write, &rdata), &write);
     render_blank(&write);
-    VPRINT(views_statefield(&write, &sdata), &write);
-
     write.symset = SYMSET_ASCII;
     write.mode = RENDER_PURITY;
 

@@ -156,8 +156,6 @@ void test_handmap(void) {
 		htr_add(&htr, make_suited((uint8_t)ACE, (uint8_t)KING));
 
 		RangeField rf = hmap_build(&htr, 0, board, hero);
-		StateField sf;
-		hmap_project_state(&rf, &sf);
 
 		bool cell_ok = (sf.grid[0][1] == COMBO_BEHIND_LIVE);
 
@@ -171,40 +169,6 @@ void test_handmap(void) {
 		printf("  (0,1) == BEHIND_LIVE:      %s\n", cell_ok ? "OK" : "FAIL");
 		printf("  live cells in StateField:  %d  (expected 1) %s\n\n",
 		       live_count, live_count == 1 ? "OK" : "FAIL");
-	}
-
-	// ---- Test 7: hmap_project_state — full range spot-check ----
-	// For each of 5 sampled cells, recompute the dominant state from the RangeField
-	// directly and verify the projected StateField agrees.
-	{
-		HandTypeRange full = htr_full();
-		RangeField rf = hmap_build(&full, 0, board, hero);
-		StateField sf;
-		hmap_project_state(&rf, &sf);
-
-		int spots[5][2] = { {0,0}, {0,1}, {4,4}, {1,0}, {0,12} };
-		bool all_ok = true;
-
-		printf("Test 7 - project_state, full range spot-check:\n");
-		for (int i = 0; i < 5; i++) {
-			int r = spots[i][0], c = spots[i][1];
-			const HMapCell* cell = &rf.grid[r][c];
-
-			ComboState expected = COMBO_BEHIND_DEAD;
-			if (cell->combo_total > 0) {
-				expected = COMBO_AHEAD;
-				for (int s = 1; s < COMBO_STATE_COUNT; s++)
-					if (cell->statecounts[s] > cell->statecounts[expected])
-						expected = (ComboState)s;
-			}
-
-			bool ok = (sf.grid[r][c] == expected);
-			if (!ok) all_ok = false;
-			printf("  (%d,%d): projected=%-12s  expected=%-12s  %s\n",
-			       r, c, combostate_str(sf.grid[r][c]), combostate_str(expected),
-			       ok ? "OK" : "FAIL");
-		}
-		printf("  all match: %s\n\n", all_ok ? "OK" : "FAIL");
 	}
 
 	// ---- Test 8: views_rangefield — line count and symbol check ----
@@ -233,30 +197,6 @@ void test_handmap(void) {
 		printf("  row 0 col 0 symbol: '%c'  (expected '.') %s\n", col0_sym, col0_ok ? "OK" : "FAIL");
 		printf("  row 0 col 1 symbol: '%c'  (expected 'L') %s\n\n", col1_sym, col1_ok ? "OK" : "FAIL");
 		panel_free(p8);
-	}
-
-	// ---- Test 9: views_statefield vs views_rangefield (RENDER_STATE) ----
-	// On a full range with no dead cards all 169 cells are populated, so
-	// views_statefield must produce the same result as views_rangefield RENDER_STATE.
-	{
-		HandTypeRange full = htr_full();
-		RangeField rf = hmap_build(&full, 0, board, hero);
-		StateField sf;
-		hmap_project_state(&rf, &sf);
-
-		Renderer ren9 = render_default();
-		ren9.mode = RENDER_STATE; ren9.symset = SYMSET_ASCII; ren9.width = CELL_1;
-		TextPanel* p_rf = views_rangefield(&ren9, &rf);
-		TextPanel* p_sf = views_statefield(&ren9, &sf);
-
-		bool match = (panel_height(p_rf) == panel_height(p_sf));
-		for (int i = 0; match && i < panel_height(p_rf); i++)
-			if (strcmp(p_rf->lines[i], p_sf->lines[i]) != 0) match = false;
-
-		printf("Test 9 - views_statefield matches views_rangefield (full range, RENDER_STATE):\n");
-		printf("  outputs match: %s\n\n", match ? "OK" : "FAIL");
-		panel_free(p_rf);
-		panel_free(p_sf);
 	}
 
 	// ---- Display: visual render of all modes ----
@@ -310,18 +250,6 @@ void test_handmap(void) {
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_2;
 		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
-
-		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_4:\n");
-		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_4;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
-
-		printf("views_statefield  SYMSET_ASCII:\n");
-		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		VPRINT(views_statefield(&disp, &sf), &disp); printf("\n");
-
-		printf("views_statefield  SYMSET_UNICODE:\n");
-		disp.symset = SYMSET_UNICODE;
-		VPRINT(views_statefield(&disp, &sf), &disp); printf("\n");
 
 #undef VPRINT
 	}

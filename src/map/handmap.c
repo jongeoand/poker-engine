@@ -96,39 +96,6 @@ int hmap_count(const RangeField* f, ComboState s) {
 	return total;
 }
 
-// Flood every cell of a StateField with a single state; useful for
-// initialising before a selective override pass.
-void hmap_state_fill(StateField* f, ComboState fill) {
-	for (int row = 0; row < HMAP_DIM; row++) {
-		for (int col = 0; col < HMAP_DIM; col++) {
-			f->grid[row][col] = fill;
-		}
-	}
-}
-
-// Collapse a RangeField to a StateField by picking the modal ComboState
-// (the bucket with the highest count) for each cell.  Ties are broken in
-// favour of the lower-valued ComboState enum (COMBO_AHEAD wins ties).
-// Empty cells (combo_total == 0) are written as COMBO_BEHIND_DEAD so
-// renderers can distinguish "not in range" from genuine behind combos.
-StateField* hmap_project_state(const RangeField* rf, StateField* out) {
-	for (int r = 0; r < HMAP_DIM; r++) {
-		for (int c = 0; c < HMAP_DIM; c++) {
-			const HMapCell* cell = &rf->grid[r][c];
-			if (cell->combo_total == 0) {
-				out->grid[r][c] = COMBO_BEHIND_DEAD;
-				continue;
-			}
-			ComboState dominant = COMBO_AHEAD;
-			for (int s = 1; s < COMBO_STATE_COUNT; s++) {
-				if (cell->statecounts[s] > cell->statecounts[dominant])
-					dominant = (ComboState)s;
-			}
-			out->grid[r][c] = dominant;
-		}
-	}
-	return out;
-}
 
 // Axis ↔ rank: ACE (rank 12) → axis 0, TWO (rank 0) → axis 12.
 // Higher rank = lower axis, so the field reads ace-first top-left.
