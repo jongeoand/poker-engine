@@ -50,10 +50,43 @@ void start_session(Session* sesh) {
 // Ops — all Session mutation lives here
 // ------------------------------------------------------------------
 
+
+int op_reset(Session* s) {
+    s->game         = make_game(2);
+    s->has_hero     = false;
+    s->has_board    = false;
+    s->street_count = 0;
+    return CMD_OK;
+}
+
 int op_dealhero(Session* s) {
+    if (s->has_hero) { op_reset(s); }
+
     deal_players(&s->game);
     s->last_cards_dealt = combo_toBitmask(s->game.playerhands[0]);
     s->has_hero = true;
+    return CMD_OK;
+}
+
+int op_assignhero(Session* s, Combo c) {
+    s->game.playerhands[0] = c;
+    s->last_cards_dealt = combo_toBitmask(c);
+    s->game.deck &= ~last_cards_dealt;
+    s->has_hero = true;
+    return CMD_OK;
+}
+
+int op_assignvillain(Session* s, Combo c) {
+    s->game.playerhands[1] = c;
+    s->last_cards_dealt = combo_toBitmask(c);
+    s->game.deck &= ~last_cards_dealt;
+    return CMD_OK;
+}
+
+int op_assignboard(Session* s, uint64_t cardmask) {
+    s->game.board |= cardmask;
+    s->last_cards_dealt = cardmask;
+    s->game.deck &= ~last_cards_dealt;
     return CMD_OK;
 }
 
@@ -85,14 +118,6 @@ int op_undo(Session* s) {
         s->last_cards_dealt = 0;
         s->has_hero         = false;
     }
-    return CMD_OK;
-}
-
-int op_reset(Session* s) {
-    s->game         = make_game(2);
-    s->has_hero     = false;
-    s->has_board    = false;
-    s->street_count = 0;
     return CMD_OK;
 }
 
