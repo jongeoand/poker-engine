@@ -222,6 +222,20 @@ static int cmd_undodeal(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+static int cmd_bomb(Session* sesh, int argc, char** argv) {
+    (void)argc; (void)argv;
+
+    op_reset(sesh);
+    op_dealbomb(sesh);
+
+    print_hero(sesh);
+    print_villain(sesh);
+    print_board(sesh);
+
+    render_blank(&sesh->renderer);
+    return CMD_OK;
+}
+
 static int cmd_hero(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     op_ensure_hero(sesh);
@@ -373,10 +387,13 @@ static const Command session_cmds[] = {
 	{ "deal",    'd', "deal",                        "deal hero hand randomly from deck",                     cmd_deal           },
 	{ "undodeal",'u', "undodeal",                    "undo last deal action",                                 cmd_undodeal       },
 	{ "street",  's', "street",                      "deal next community street from deck",                  cmd_street         },
+    { "bomb",    'b', "bomb",                        "deal bomb pot (players and flop)",                      cmd_bomb           },
+
 	{ "print hero",    'h', "print hero",    "print hero hand",      cmd_hero    },
 	{ "print villain", 'V', "print villain", "print villain hand",   cmd_villain },
 	{ "print board",   'b', "print board",   "print cards on board", cmd_board   },
-	{ "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
+
+    { "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
 	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
 	{ "equity",   'e', "equity",                        "build equity ScalarField vs hero + board",               cmd_equity         },
