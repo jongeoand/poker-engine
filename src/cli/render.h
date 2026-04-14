@@ -9,10 +9,7 @@
 #include "handtype.h"
 #include "eval.h"
 #include "draws.h"
-
-typedef enum { RENDER_STATE, RENDER_PURITY, RENDER_DRAW } RenderMode;
-typedef enum { SYMSET_ASCII, SYMSET_UNICODE }             SymSet;
-typedef enum { CELL_1, CELL_2, CELL_4 }                  CellWidth;
+#include "render_types.h"
 
 typedef struct {
 	FILE*      sink;        /* output destination; NULL → stdout */

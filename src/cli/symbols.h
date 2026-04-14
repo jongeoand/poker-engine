@@ -1,7 +1,7 @@
 #ifndef SYMBOLS_H_
 #define SYMBOLS_H_
 
-#include "render.h"
+#include "rendertypes.h"
 #include "analysis/combostate.h"
 
 /* State symbol — the primary character encoding a ComboState in a grid cell.
