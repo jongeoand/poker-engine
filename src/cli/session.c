@@ -18,7 +18,7 @@ Session session_default(void) {
     Session s;
     s.game      = make_game(2);
     s.renderer  = render_default();
-    
+
     // default rendering settings
     s.renderer.symset = SYMSET_UNICODE;
     s.renderer.width = CELL_2;
@@ -46,9 +46,98 @@ void start_session(Session* sesh) {
 
 }
 
-// Session specific helpers
+// ------------------------------------------------------------------
+// Ops — all Session mutation lives here
+// ------------------------------------------------------------------
 
-/* Print the hero hand to the session sink. */
+int op_dealhero(Session* s) {
+    deal_players(&s->game);
+    s->last_cards_dealt = combo_toBitmask(s->game.playerhands[0]);
+    s->has_hero = true;
+    return CMD_OK;
+}
+
+int op_dealstreet(Session* s) {
+    if (s->street_count >= 3) return CMD_ERR;
+    uint64_t before = s->game.board;
+    deal_street(&s->game);
+    s->last_cards_dealt = s->game.board & ~before;
+    s->street_boards[s->street_count++] = s->game.board;
+    s->has_board = true;
+    return CMD_OK;
+}
+
+int op_dealbomb(Session* s) {
+    deal_bomb(&s->game);
+    return CMD_OK;
+}
+
+int op_undo(Session* s) {
+    if (!s->has_hero || s->last_cards_dealt == 0) return CMD_ERR;
+    if (s->has_board) {
+        s->game.deck  |=  s->last_cards_dealt;
+        s->game.board &= ~s->last_cards_dealt;
+        s->last_cards_dealt = 0;
+        if (s->street_count > 0) s->street_count--;
+        if (s->game.board == 0) s->has_board = false;
+    } else {
+        s->game             = make_game(s->game.headcount);
+        s->last_cards_dealt = 0;
+        s->has_hero         = false;
+    }
+    return CMD_OK;
+}
+
+int op_reset(Session* s) {
+    s->game         = make_game(2);
+    s->has_hero     = false;
+    s->has_board    = false;
+    s->street_count = 0;
+    return CMD_OK;
+}
+
+int op_ensure_hero(Session* s) {
+    if (!s->has_hero) return op_dealhero(s);
+    return CMD_OK;
+}
+
+int op_ensure_board(Session* s) {
+    if (!s->has_board) return op_dealstreet(s);
+    return CMD_OK;
+}
+
+// ------------------------------------------------------------------
+// Context 
+// ------------------------------------------------------------------
+
+Context get_context(const Session* sesh) {
+    uint64_t hero_mask = combo_toBitmask(sesh->game.playerhands[0]);
+    return (Context){ hero_mask, hero_mask | sesh->game.board, sesh->game.board };
+}
+
+Context get_vcontext(const Session* sesh) {
+    uint64_t villain_mask = combo_toBitmask(sesh->game.playerhands[1]);
+    return (Context){ villain_mask, villain_mask | sesh->game.board, sesh->game.board };
+}
+
+TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
+    HandTypeRange full = htr_full();
+    RangeField rangefield = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
+
+    return views_rangefield(r, &rangefield);
+}
+
+TextPanel* make_statefield_window(const RangeField* f, Renderer* r) {
+    StateField plane;
+    hmap_project_state(f, &plane);
+
+    return views_statefield(r, &plane);
+}
+
+// ------------------------------------------------------------------
+// Print helpers
+// ------------------------------------------------------------------
+
 static void print_hero(Session* sesh) {
 	FILE* out = render_get_sink(&sesh->renderer);
 	fprintf(out, "hero: ");
@@ -56,7 +145,6 @@ static void print_hero(Session* sesh) {
 	fprintf(out, "\n");
 }
 
-/* Print the current board to the session sink. */
 static void print_board(Session* sesh) {
 	FILE* out = render_get_sink(&sesh->renderer);
 	if (sesh->game.board == 0) {
@@ -68,17 +156,13 @@ static void print_board(Session* sesh) {
 	fprintf(out, "\n");
 }
 
-// ------------------------------------------------------------------ 
-// Command handlers                                                     
-// ------------------------------------------------------------------ 
+// ------------------------------------------------------------------
+// Command handlers
+// ------------------------------------------------------------------
 
 static int cmd_deal(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    deal_players(&sesh->game);
-
-    sesh->last_cards_dealt = combo_toBitmask(sesh->game.playerhands[0]);
-    sesh->has_hero = true;
-
+    op_dealhero(sesh);
     print_hero(sesh);
     return CMD_OK;
 }
@@ -86,17 +170,10 @@ static int cmd_deal(Session* sesh, int argc, char** argv) {
 static int cmd_street(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
 
-    if (sesh->street_count >= 3) {
+    if (op_dealstreet(sesh) != CMD_OK) {
         fprintf(render_get_sink(&sesh->renderer), "all streets dealt\n");
         return CMD_ERR;
     }
-
-    uint64_t before = sesh->game.board;
-    deal_street(&sesh->game);
-    sesh->last_cards_dealt = sesh->game.board & ~before;
-    sesh->street_boards[sesh->street_count++] = sesh->game.board;
-    sesh->has_board = true;
-
     print_board(sesh);
     return CMD_OK;
 }
@@ -104,94 +181,51 @@ static int cmd_street(Session* sesh, int argc, char** argv) {
 static int cmd_undodeal(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     FILE* out = render_get_sink(&sesh->renderer);
-
-    if (!sesh->has_hero || sesh->last_cards_dealt == 0) {
+    bool had_board = sesh->has_board;
+    if (op_undo(sesh) != CMD_OK) {
         fprintf(out, "nothing to undo\n");
         return CMD_ERR;
     }
-
-    if (sesh->has_board) {
-        /* Undo the last street: return its cards to the deck and strip from board. */
-        sesh->game.deck  |=  sesh->last_cards_dealt;
-        sesh->game.board &= ~sesh->last_cards_dealt;
-        sesh->last_cards_dealt = 0;
-        if (sesh->street_count > 0) sesh->street_count--;
-        if (sesh->game.board == 0)
-            sesh->has_board = false;
-        print_board(sesh);
-    } else {
-        /* Undo deal_players: reset the game entirely so the full deck is restored
-           (villain's cards are also removed from the deck by deal_players and are
-           not tracked individually, so make_game is the only clean restore path). */
-        sesh->game             = make_game(sesh->game.headcount);
-        sesh->last_cards_dealt = 0;
-        sesh->has_hero         = false;
-        fprintf(out, "hero hand cleared\n");
-    }
-
+    if (had_board) print_board(sesh);
+    else fprintf(out, "hero hand cleared\n");
     return CMD_OK;
 }
 
-// print hero combo if Session has_hero, otherwise deal hero hand and print to sink
 static int cmd_hero(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    
-    if (sesh->has_hero) { print_hero(sesh); return CMD_OK; }
-
-    deal_players(&sesh->game);
-    sesh->has_hero = true;
+    op_ensure_hero(sesh);
     print_hero(sesh);
-
     return CMD_OK;
 }
 
-// print board if Session has one otherwise deal flop
 static int cmd_board(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    
-    if (sesh->has_board) { print_board(sesh); return CMD_OK; }
-
-    if (!sesh->has_hero) { deal_players(&sesh->game); sesh->has_hero = true; }
-
-    deal_street(&sesh->game);
-    sesh->has_board = true;
-    sesh->last_cards_dealt = sesh->game.board;
-    sesh->street_boards[sesh->street_count++] = sesh->game.board;
+    op_ensure_hero(sesh);
+    op_ensure_board(sesh);
     print_board(sesh);
-
     return CMD_OK;
 }
 
-// invariants - one street is dealt and hero has hand  
 static int cmd_combostream(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    bool streamable = sesh->has_hero && sesh->has_board;
+    if (!sesh->has_hero || !sesh->has_board) return CMD_ERR;
 
-    if (!streamable) { return CMD_ERR; }
-
+    Context ctx = get_context(sesh);
     HtrComboStream stream;
     HandTypeRange full = htr_full();
-
-    Combo    hero_combo = sesh->game.playerhands[0];
-    uint64_t hero = toBitmask(hero_combo.a) | toBitmask(hero_combo.b);
-    uint64_t dead = sesh->game.board | hero;
-
-    combostream_init(&stream, &full, dead);
+    combostream_init(&stream, &full, ctx.dead);
 
     Combo current;
-
     while (combostream_next(&stream, &current)) {
         render_combo(&sesh->renderer, current);
         render_blank(&sesh->renderer);
     }
-
     return CMD_OK;
 }
 
 static int cmd_render_settings(Session* sesh, int argc, char** argv) {
     FILE* out = render_get_sink(&sesh->renderer);
 
-    // no args - print current symset and width
     if (argc == 0) {
         fprintf(out, "symset: %s  width: %d\n",
                 sesh->renderer.symset == SYMSET_UNICODE ? "unicode" : "ascii",
@@ -213,63 +247,15 @@ static int cmd_render_settings(Session* sesh, int argc, char** argv) {
 
 static int cmd_analyze(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    FILE* out = render_get_sink(&sesh->renderer);
 
-    // deal hero and board if they don't exist yet
-    if (!sesh->has_hero)  { deal_players(&sesh->game);  sesh->has_hero  = true; }
-    if (!sesh->has_board) { deal_street(&sesh->game);   sesh->has_board = true; }
+    op_ensure_hero(sesh);
+    op_ensure_board(sesh);
 
-    Combo    hero    = sesh->game.playerhands[0];
-    uint64_t bitmask = toBitmask(hero.a) | toBitmask(hero.b);
-    uint64_t dead    = bitmask | sesh->game.board;
-
-    HandTypeRange full = htr_full();
-
-    RangeField range_field = hmap_build(&full, dead, sesh->game.board, bitmask);
-    StateField plane;
-
-    hmap_project_state(&range_field, &plane);
-
-    fprintf(out, "RangeField: \n");
-    { TextPanel* _p = views_rangefield(&sesh->renderer, &range_field); panel_print(_p, &sesh->renderer); panel_free(_p); }
-    render_blank(&sesh->renderer);
-
-    fprintf(out, "StateField: \n");
-    { TextPanel* _p = views_statefield(&sesh->renderer, &plane); panel_print(_p, &sesh->renderer); panel_free(_p); }
-    return CMD_OK;
-}
-
-static int cmd_project(Session* sesh, int argc, char** argv) {
-    FILE* out = render_get_sink(&sesh->renderer);
-    int n = 1;
-
-    if (argc == 0) {
-        if (!sesh->has_hero)  { deal_players(&sesh->game);  sesh->has_hero  = true; }
-        if (!sesh->has_board) { deal_street(&sesh->game);   sesh->has_board = true; }
-    } else {
-        n = atoi(argv[0]);
-        if (n <= 0) { fprintf(out, "invalid count '%s'\n", argv[0]); return CMD_ERR; }
-    }
-
-    Combo    hero    = sesh->game.playerhands[0];
-    uint64_t bitmask = toBitmask(hero.a) | toBitmask(hero.b);
-    uint64_t dead    = bitmask | sesh->game.board;
-
-    HandTypeRange full = htr_full();
-
-    RangeField range_field = hmap_build(&full, dead, sesh->game.board, bitmask);
-    StateField plane;
-
-    hmap_project_state(&range_field, &plane);
-
-    fprintf(out, "RangeField: \n");
-    { TextPanel* _p = views_rangefield(&sesh->renderer, &range_field); panel_print(_p, &sesh->renderer); panel_free(_p); }
-    render_blank(&sesh->renderer);
-
-    for (int i = 0; i < n; i++) {
-        fprintf(out, "StateField %d \n", i);
-        { TextPanel* _p = views_statefield(&sesh->renderer, &plane); panel_print(_p, &sesh->renderer); panel_free(_p); }
-    }
+    Context ctx = get_context(sesh);
+    TextPanel* window = make_rangefield_window(ctx, &sesh->renderer);
+ 
+    panel_print(window, &sesh->renderer);
+    panel_free(window);
 
     return CMD_OK;
 }
@@ -277,47 +263,31 @@ static int cmd_project(Session* sesh, int argc, char** argv) {
 static int cmd_layout(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
 
-    if (!sesh->has_hero) { deal_players(&sesh->game); sesh->has_hero = true; }
+    op_ensure_hero(sesh);
+    op_ensure_board(sesh);
 
-    if (sesh->street_count == 0) {
-        deal_street(&sesh->game);
-        sesh->street_boards[sesh->street_count++] = sesh->game.board;
-        sesh->has_board = true;
-    }
-
-    Combo    hero        = sesh->game.playerhands[0];
-    Combo    villain     = sesh->game.playerhands[1];
-    uint64_t heromask    = toBitmask(hero.a)    | toBitmask(hero.b);
-    uint64_t villainmask = toBitmask(villain.a) | toBitmask(villain.b);
-
-    HandTypeRange full = htr_full();
-    TextPanel* view = NULL;
+    TextPanel* layout = NULL;
 
     for (int i = 0; i < sesh->street_count; i++) {
-        uint64_t board = sesh->street_boards[i];
+        Context hero_ctx = get_context(sesh);
+        Context villain_ctx = get_vcontext(sesh);
 
-        RangeField rf_hero    = hmap_build(&full, heromask    | board, board, heromask);
-        RangeField rf_villain = hmap_build(&full, villainmask | board, board, villainmask);
+        TextPanel* hero_pov = make_rangefield_window(hero_ctx, &sesh->renderer);
+        TextPanel* villain_pov = make_rangefield_window(villain_ctx, &sesh->renderer);
+ 
+        TextPanel* stacked = panel_stack_consume(hero_pov, villain_pov);
 
-        TextPanel* p_hero    = views_rangefield(&sesh->renderer, &rf_hero);
-        TextPanel* p_villain = views_rangefield(&sesh->renderer, &rf_villain);
-        TextPanel* stacked   = panel_stack_consume(p_hero, p_villain);
-
-        view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
+        layout = (layout == NULL) ? stacked : panel_join_consume(layout, stacked, 2);
     }
 
-    panel_print(view, &sesh->renderer);
-    panel_free(view);
+    panel_print(layout, &sesh->renderer);
+    panel_free(layout);
     return CMD_OK;
 }
 
-/* reset  — fresh deck, cleared board and hands, cleared panels */
 static int cmd_reset(Session* sesh, int argc, char** argv) {
 	(void)argc; (void)argv;
-	sesh->game         = make_game(2);
-	sesh->has_hero     = false;
-	sesh->has_board    = false;
-	sesh->street_count = 0;
+	op_reset(sesh);
 	fprintf(render_get_sink(&sesh->renderer), "session reset\n");
 	return CMD_OK;
 }
@@ -343,8 +313,7 @@ static const Command session_cmds[] = {
 	{ "print board", 'b', "print board", "print cards on board", cmd_board },
 	{ "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
 	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
-	{ "analyze",  'a', "analyze",                      "build RangeField + StateField vs hero + board",         cmd_analyze        },
-	{ "project",  'p', "project [n]",                 "project StateField n times (default 1)",                cmd_project        },
+	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
 	{ "layout",   'l', "layout",                       "multi-street rangefield view (hero above villain, streets side by side)", cmd_layout },
 	{ "reset",   'c', "reset",                       "clear all session state (deck, range)",                 cmd_reset          },
 	{ "help",    '?', "help",                        "print this command list",                               cmd_help           },
@@ -362,4 +331,3 @@ static int cmd_help(Session* sesh, int argc, char** argv) {
 	cmd_print_help(&session_table, render_get_sink(&sesh->renderer));
 	return CMD_OK;
 }
-

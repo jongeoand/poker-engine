@@ -33,4 +33,23 @@ Session session_default(void);
 /* Start the interactive REPL loop. Returns when the user quits. */
 void start_session(Session* sesh);
 
+int op_dealhero(Session* s);
+int op_dealstreet(Session* s);
+int op_dealbomb(Session* s);
+int op_undo(Session* s);
+int op_reset(Session* s);
+int op_ensure_hero(Session* s);
+int op_ensure_board(Session* s);
+
+typedef struct {
+    uint64_t hero_mask;
+    uint64_t dead;
+    uint64_t board;
+} Context;
+
+Context get_context(const Session* sesh);
+Context get_vcontext(const Session* sesh);
+
+TextPanel* make_rangefield_window(Context ctx, Renderer* r);
+TextPanel* make_statefield_window(const RangeField* f, Renderer* r);
 #endif
