@@ -2,28 +2,7 @@
 
 #include "views.h"
 #include "panel.h"
-
-// ---- Helpers ----
-
-// Select the dominant ComboState for a cell and compute fractions.
-// Returns 0 if the cell is empty.
-static int cell_analysis(HMapCell cell,
-                         ComboState* dominant,
-                         double* dom_frac,
-                         double* draw_frac)
-{
-	int total = hmap_cell_total(cell);
-	if (total == 0) return 0;
-
-	*dominant = COMBO_AHEAD;
-	for (int s = 1; s < COMBO_STATE_COUNT; s++)
-		if (hmap_cell_state_total(cell, s) > hmap_cell_state_total(cell, (int)*dominant))
-			*dominant = (ComboState)s;
-
-	*dom_frac  = (double)hmap_cell_state_total(cell, (int)*dominant) / total;
-	*draw_frac = (double)hmap_cell_state_total(cell, COMBO_BEHIND_LIVE) / total;
-	return 1;
-}
+#include "analysis/celldata.h"
 
 // ---- Views ----
 
@@ -64,42 +43,45 @@ TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
 	for (int ri = 0; ri < HMAP_DIM; ri++) {
 		int len = 0;
 		for (int col = 0; col < HMAP_DIM; col++) {
-			HMapCell cell = f->grid[ri][col];
-			ComboState dominant;
-			double dom_frac, draw_frac;
-			int filled = cell_analysis(cell, &dominant, &dom_frac, &draw_frac);
+			CellData d = cell_analyze(f->grid[ri][col]);
 
 			switch (rend->width) {
 			case CELL_1:
-				if (!filled) {
+				if (d.empty) {
 					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_empty(rend->symset));
 					break;
 				}
 				switch (rend->mode) {
 				case RENDER_STATE:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, dominant));
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, d.dominant_state));
 					break;
 				case RENDER_PURITY:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, dom_frac));
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.dom_frac));
 					break;
 				case RENDER_DRAW:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, draw_frac));
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.draw_frac));
+					break;
+				case RENDER_SUIT:
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_suit(rend->symset, d.dominant_suit));
+					break;
+				case RENDER_FLUSH:
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.flush_frac));
 					break;
 				}
 				break;
 
 			case CELL_2:
-				if (!filled) {
+				if (d.empty) {
 					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s  ", symbol_empty(rend->symset));
 					break;
 				}
 				len += snprintf(row + len, sizeof(row) - (size_t)len, "%s%s ",
-					symbol_state(rend->symset, dominant),
-					symbol_ramp(rend->symset, dom_frac));
+					symbol_state(rend->symset, d.dominant_state),
+					symbol_suit(rend->symset, d.dominant_suit_in_state));
 				break;
 
 			case CELL_4:
-				if (!filled) {
+				if (d.empty) {
 					len += snprintf(row + len, sizeof(row) - (size_t)len, "  .  ");
 					break;
 				}
@@ -114,7 +96,7 @@ TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
 						len += snprintf(row + len, sizeof(row) - (size_t)len, "%c%cs", hi, lo);
 					else
 						len += snprintf(row + len, sizeof(row) - (size_t)len, "%c%co", hi, lo);
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, dominant));
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, d.dominant_state));
 				}
 				break;
 			}
@@ -146,6 +128,21 @@ TextPanel* views_legend(Renderer* rend) {
 		break;
 	case RENDER_DRAW:
 		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "Legend (draw proportion, low→high):  ");
+		for (int i = 0; i <= 8; i++)
+			len += snprintf(buf + len, sizeof(buf) - (size_t)len, "%s ", symbol_ramp(rend->symset, i / 8.0));
+		panel_add_line(p, buf);
+		break;
+	case RENDER_SUIT:
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "Legend:");
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "  %s=none",       symbol_suit(rend->symset, SUIT_NONE));
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "  %s=backdoor",   symbol_suit(rend->symset, SUIT_BACKDOOR));
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "  %s=flush-draw", symbol_suit(rend->symset, SUIT_FLUSH_DRAW));
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "  %s=flush-made", symbol_suit(rend->symset, SUIT_FLUSH_MADE));
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "  %s=empty",      symbol_empty(rend->symset));
+		panel_add_line(p, buf);
+		break;
+	case RENDER_FLUSH:
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "Legend (flush fraction, low→high):  ");
 		for (int i = 0; i <= 8; i++)
 			len += snprintf(buf + len, sizeof(buf) - (size_t)len, "%s ", symbol_ramp(rend->symset, i / 8.0));
 		panel_add_line(p, buf);
