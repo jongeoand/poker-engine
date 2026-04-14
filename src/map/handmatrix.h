@@ -1,3 +1,8 @@
+#ifndef HANDMATRIX_H_
+#define HANDMATRIX_H_
+
+#include <stdint.h>
+#include <assert.h>
 #include "core/handtype.h"
 // Grid layout — axis mapping: 12 - rank
 //   ACE (rank 12) → axis 0    TWO (rank 0) → axis 12
@@ -61,7 +66,7 @@ static void hmap_tocoords(HandType ht, int* row, int* col) {
 //   row == col  → pair   (single rank r1)
 //   row <  col  → suited (r1 > r2 because lower axis = higher rank)
 //   row >  col  → offsuit
-static HandType hmap_fromcoords(int row, int col) {
+static inline HandType hmap_fromcoords(int row, int col) {
 	assert(row >= 0 && row < HMAP_DIM);
 	assert(col >= 0 && col < HMAP_DIM);
 
@@ -72,3 +77,5 @@ static HandType hmap_fromcoords(int row, int col) {
 	if (row <  col) return make_suited(r1, r2);   // r1 = high, r2 = low
 	return make_offsuit(r2, r1);                  // r2 = high, r1 = low
 }
+
+#endif

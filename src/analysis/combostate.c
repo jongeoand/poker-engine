@@ -38,6 +38,29 @@ ComboState classify_combostate(uint64_t board, uint64_t hero, uint64_t villain) 
 	return COMBO_BEHIND_DEAD;
 }
 
+// Suit s occupies bits [s*13, s*13+12]: clubs=0, diamonds=13, hearts=26, spades=39.
+static const uint64_t suit_masks[4] = {
+	0x1FFFULL,        // clubs
+	0x1FFFULL << 13,  // diamonds
+	0x1FFFULL << 26,  // hearts
+	0x1FFFULL << 39,  // spades
+};
+
+SuitClass classify_suit(uint64_t board, uint64_t combo) {
+	SuitClass best = SUIT_NONE;
+	for (int s = 0; s < 4; s++) {
+		if (!(combo & suit_masks[s])) continue;  // combo contributes no card of this suit
+		int total = __builtin_popcountll((board | combo) & suit_masks[s]);
+		SuitClass sc;
+		if      (total >= 5) sc = SUIT_FLUSH_MADE;
+		else if (total >= 4) sc = SUIT_FLUSH_DRAW;
+		else if (total >= 3) sc = SUIT_BACKDOOR;
+		else                 continue;
+		if (sc > best) best = sc;
+	}
+	return best;
+}
+
 ComboStateCounts count_combostates(const HandTypeRange* r, uint64_t board, uint64_t hero, uint64_t dead) {
 	ComboStateCounts bucket = {0};
 	HtrComboStream stream;
