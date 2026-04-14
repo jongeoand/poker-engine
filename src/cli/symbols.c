@@ -40,6 +40,22 @@ const char* symbol_ramp(SymSet s, double frac) {
 	return RAMP_ASCII[ramp_index(frac, 8)];
 }
 
+/* Circle-fill progression — perceptually distinct from block-family state symbols.
+   SUIT_NONE=○  SUIT_BACKDOOR=◑  SUIT_FLUSH_DRAW=◕  SUIT_FLUSH_MADE=● */
+static const char* SUIT_ASCII[4]   = { "n", "b", "f", "F" };
+static const char* SUIT_UNICODE[4] = {
+	"\xe2\x97\x8b",  /* ○  SUIT_NONE       (U+25CB) */
+	"\xe2\x97\x91",  /* ◑  SUIT_BACKDOOR   (U+25D1) */
+	"\xe2\x97\x95",  /* ◕  SUIT_FLUSH_DRAW (U+25D5) */
+	"\xe2\x97\x8f",  /* ●  SUIT_FLUSH_MADE (U+25CF) */
+};
+
+const char* symbol_suit(SymSet s, SuitClass suit) {
+	int idx = (int)suit;
+	if (idx < 0 || idx >= 4) return "?";
+	return s == SYMSET_UNICODE ? SUIT_UNICODE[idx] : SUIT_ASCII[idx];
+}
+
 const char* symbol_empty(SymSet s) {
 	return s == SYMSET_UNICODE ? "\xc2\xb7" : ".";
 }
