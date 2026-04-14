@@ -152,13 +152,6 @@ TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
     return views_rangefield(r, &rangefield);
 }
 
-TextPanel* make_statefield_window(const RangeField* f, Renderer* r) {
-    StateField plane;
-    hmap_project_state(f, &plane);
-
-    return views_statefield(r, &plane);
-}
-
 // ------------------------------------------------------------------
 // Print helpers
 // ------------------------------------------------------------------

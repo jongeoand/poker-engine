@@ -123,19 +123,6 @@ TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
 	return p;
 }
 
-TextPanel* views_statefield(Renderer* rend, const StateField* f) {
-	TextPanel* p = panel_create();
-	if (!p) return NULL;
-	char row[128];
-	for (int ri = 0; ri < HMAP_DIM; ri++) {
-		int len = 0;
-		for (int col = 0; col < HMAP_DIM; col++)
-			len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, f->grid[ri][col]));
-		panel_add_line(p, row);
-	}
-	return p;
-}
-
 TextPanel* views_legend(Renderer* rend) {
 	TextPanel* p = panel_create();
 	if (!p) return NULL;

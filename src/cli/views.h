@@ -15,9 +15,6 @@ TextPanel* views_htr_grid(const HandTypeRange* h);
 /* Full field grid — respects r->mode, r->symset, r->width. */
 TextPanel* views_rangefield(Renderer* r, const RangeField* f);
 
-/* Dominant-state-only grid — respects r->symset. */
-TextPanel* views_statefield(Renderer* r, const StateField* f);
-
 /* Symbol legend for the current render mode and symbol set. */
 TextPanel* views_legend(Renderer* r);
 
