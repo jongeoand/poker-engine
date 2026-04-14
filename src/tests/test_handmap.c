@@ -31,7 +31,7 @@ void test_handmap(void) {
 		int populated = 0, pop_row = -1, pop_col = -1;
 		for (int r = 0; r < HMAP_DIM; r++) {
 			for (int c = 0; c < HMAP_DIM; c++) {
-				if (!hmap_cell_isempty(&topo.grid[r][c])) {
+				if (!hmap_cell_isempty(topo.grid[r][c])) {
 					populated++;
 					pop_row = r; pop_col = c;
 				}
@@ -39,7 +39,7 @@ void test_handmap(void) {
 		}
 
 		int total = hmap_total(&topo);
-		int behind_live = topo.grid[0][1].statecounts[COMBO_BEHIND_LIVE];
+		int behind_live = hmap_cell_state_total(topo.grid[0][1], COMBO_BEHIND_LIVE);
 
 		printf("Test 1 - AKs, dead=0:\n");
 		printf("  populated cells: %d  (expected 1) %s\n", populated, populated == 1 ? "OK" : "FAIL");
@@ -59,8 +59,8 @@ void test_handmap(void) {
 		RangeField topo = hmap_build(&htr, dead, board, hero);
 
 		int total      = hmap_total(&topo);
-		int behind_live = topo.grid[0][1].statecounts[COMBO_BEHIND_LIVE];
-		bool only_01   = !hmap_cell_isempty(&topo.grid[0][1]);
+		int behind_live = hmap_cell_state_total(topo.grid[0][1], COMBO_BEHIND_LIVE);
+		bool only_01   = !hmap_cell_isempty(topo.grid[0][1]);
 
 		printf("Test 2 - AKs, Ac dead:\n");
 		printf("  combo_total:     %d  (expected 3) %s\n", total, total == 3 ? "OK" : "FAIL");
@@ -79,7 +79,7 @@ void test_handmap(void) {
 		int populated = 0, pop_row = -1, pop_col = -1;
 		for (int r = 0; r < HMAP_DIM; r++) {
 			for (int c = 0; c < HMAP_DIM; c++) {
-				if (!hmap_cell_isempty(&topo.grid[r][c])) {
+				if (!hmap_cell_isempty(topo.grid[r][c])) {
 					populated++;
 					pop_row = r; pop_col = c;
 				}
@@ -87,7 +87,7 @@ void test_handmap(void) {
 		}
 
 		int total      = hmap_total(&topo);
-		int behind_dead = topo.grid[4][4].statecounts[COMBO_BEHIND_DEAD];
+		int behind_dead = hmap_cell_state_total(topo.grid[4][4], COMBO_BEHIND_DEAD);
 
 		printf("Test 3 - TT, dead=0:\n");
 		printf("  populated cells: %d  (expected 1) %s\n", populated, populated == 1 ? "OK" : "FAIL");
@@ -157,13 +157,24 @@ void test_handmap(void) {
 
 		RangeField rf = hmap_build(&htr, 0, board, hero);
 
-		bool cell_ok = (sf.grid[0][1] == COMBO_BEHIND_LIVE);
+		// Derive dominant state per cell directly from RangeField (StateField removed).
+		#define DOMINANT(cell) ({                                             \
+			ComboState _d = COMBO_AHEAD;                                      \
+			for (int _s = 1; _s < COMBO_STATE_COUNT; _s++)                   \
+				if (hmap_cell_state_total((cell), _s) >                       \
+				    hmap_cell_state_total((cell), (int)_d)) _d = (ComboState)_s; \
+			_d; })
+
+		bool cell_ok = (DOMINANT(rf.grid[0][1]) == COMBO_BEHIND_LIVE);
 
 		int live_count = 0;
 		for (int r = 0; r < HMAP_DIM; r++)
 			for (int c = 0; c < HMAP_DIM; c++)
-				if (sf.grid[r][c] == COMBO_BEHIND_LIVE)
+				if (!hmap_cell_isempty(rf.grid[r][c]) &&
+				    DOMINANT(rf.grid[r][c]) == COMBO_BEHIND_LIVE)
 					live_count++;
+
+		#undef DOMINANT
 
 		printf("Test 6 - project_state, AKs only:\n");
 		printf("  (0,1) == BEHIND_LIVE:      %s\n", cell_ok ? "OK" : "FAIL");
@@ -213,8 +224,6 @@ void test_handmap(void) {
 
 		HandTypeRange full = htr_full();
 		RangeField rf = hmap_build(&full, dead_d, board_d, hero_d);
-		StateField sf;
-		hmap_project_state(&rf, &sf);
 
 		printf("Display — board: Ah Kd Qc  hero: Jh Td\n");
 		printf("(A=ahead  C=chop  L=behind_live  D=behind_dead  .=empty)\n\n");
