@@ -71,22 +71,20 @@ int op_dealhero(Session* s) {
 int op_assignhero(Session* s, Combo c) {
     s->game.playerhands[0] = c;
     s->last_cards_dealt = combo_toBitmask(c);
-    s->game.deck &= ~last_cards_dealt;
+    s->game.deck &= ~s->last_cards_dealt;
     s->has_hero = true;
     return CMD_OK;
 }
 
 int op_assignvillain(Session* s, Combo c) {
     s->game.playerhands[1] = c;
-    s->last_cards_dealt = combo_toBitmask(c);
-    s->game.deck &= ~last_cards_dealt;
     return CMD_OK;
 }
 
 int op_assignboard(Session* s, uint64_t cardmask) {
     s->game.board |= cardmask;
     s->last_cards_dealt = cardmask;
-    s->game.deck &= ~last_cards_dealt;
+    s->game.deck &= ~s->last_cards_dealt;
     return CMD_OK;
 }
 
@@ -144,6 +142,8 @@ Context get_vcontext(const Session* sesh) {
     uint64_t villain_mask = combo_toBitmask(sesh->game.playerhands[1]);
     return (Context){ villain_mask, villain_mask | sesh->game.board, sesh->game.board };
 }
+
+// Windows 
 
 TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
     HandTypeRange full = htr_full();
@@ -233,7 +233,8 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
 
 static int cmd_combostream(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
-    if (!sesh->has_hero || !sesh->has_board) return CMD_ERR;
+    op_ensure_hero(sesh);
+    op_ensure_board(sesh);
 
     Context ctx = get_context(sesh);
     HtrComboStream stream;
@@ -242,7 +243,13 @@ static int cmd_combostream(Session* sesh, int argc, char** argv) {
 
     Combo current;
     while (combostream_next(&stream, &current)) {
-        render_combo(&sesh->renderer, current);
+        op_assignvillain(sesh, current);
+        
+        Context ctx = get_vcontext(sesh);
+        TextPanel* view = make_rangefield_window(ctx, &sesh->renderer);
+        panel_print(view, &sesh->renderer);
+        panel_free(view);
+
         render_blank(&sesh->renderer);
     }
     return CMD_OK;
@@ -295,14 +302,10 @@ static int cmd_layout(Session* sesh, int argc, char** argv) {
 
     for (int i = 0; i < sesh->street_count; i++) {
         Context hero_ctx = get_context(sesh);
-        Context villain_ctx = get_vcontext(sesh);
 
         TextPanel* hero_pov = make_rangefield_window(hero_ctx, &sesh->renderer);
-        TextPanel* villain_pov = make_rangefield_window(villain_ctx, &sesh->renderer);
- 
-        TextPanel* stacked = panel_stack_consume(hero_pov, villain_pov);
 
-        layout = (layout == NULL) ? stacked : panel_join_consume(layout, stacked, 2);
+        layout = (layout == NULL) ? hero_pov : panel_join_consume(layout, hero_pov, 2);
     }
 
     panel_print(layout, &sesh->renderer);
