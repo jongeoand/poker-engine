@@ -13,6 +13,7 @@
 #include "range/iterate.c"
 #include "analysis/combostate.c"
 #include "analysis/celldata.c"
+#include "sim/equity.c"
 #include "map/handmap.c"
 #include "cli/symbols.c"
 #include "cli/panel.c"

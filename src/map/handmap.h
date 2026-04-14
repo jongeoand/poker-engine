@@ -96,4 +96,28 @@ int hmap_total(const RangeField* f);
 // Sum of hmap_cell_state_total(cell, s) across all 169 cells.
 int hmap_count(const RangeField* f, ComboState s);
 
+// ------------------------------------------------------------------
+// ScalarField — 13×13 grid of float, one value per hand type.
+//
+// Each cell holds the mean equity of that hand type against a specific
+// hero holding, derived from a pre-built RangeField.
+//
+// Suit-isomorphism optimisation: combos that are equivalent under suit
+// relabelling on the given board share the same equity, so only one
+// equity call is made per (hand_type, SuitClass) bucket.  The bucket
+// counts come directly from the RangeField, so at most
+// 169 × SUIT_CLASS_COUNT equity evaluations are needed (vs up to 1326
+// if every combo were evaluated independently).
+//
+// Sentinel: cells with no live combos are set to -1.0f.
+// ------------------------------------------------------------------
+typedef HandMatrix(float) ScalarField;
+
+// Build a ScalarField from an existing RangeField.
+//   rf    = pre-built villain range (from hmap_build)
+//   dead  = board | hero bitmask  (same mask used for hmap_build)
+//   board = community card bitmask
+//   hero  = hero hole card bitmask
+ScalarField scalar_build(const RangeField* rf, uint64_t dead,
+                         uint64_t board, uint64_t hero);
 #endif

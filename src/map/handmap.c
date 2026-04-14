@@ -1,4 +1,5 @@
 #include "map/handmap.h"
+#include "sim/equity.h"
 
 // Merge src into dst nibble-by-nibble.
 // Direct uint64_t addition would carry across nibble boundaries, so each
@@ -62,4 +63,63 @@ int hmap_count(const RangeField* f, ComboState s) {
 		for (int c = 0; c < HMAP_DIM; c++)
 			total += hmap_cell_state_total(f->grid[r][c], (int)s);
 	return total;
+}
+
+// Build a ScalarField (mean villain equity) from a RangeField.
+//
+// For each (hand_type, SuitClass) bucket that has combos, find one canonical
+// representative combo and call equity_fast once.  All combos in the bucket
+// are suit-isomorphic on the given board and therefore share the same equity.
+// The bucket count from the cell drives the weighted average without any
+// additional equity calls.
+//
+// Empty cells (no live combos) are set to the sentinel value -1.0f.
+ScalarField scalar_build(const RangeField* rf, uint64_t dead,
+                         uint64_t board, uint64_t hero) {
+	ScalarField sf;
+	for (int r = 0; r < HMAP_DIM; r++)
+		for (int c = 0; c < HMAP_DIM; c++)
+			sf.grid[r][c] = -1.0f;
+
+	Combo buf[12]; /* max combos per hand type (offsuit: 12) */
+
+	for (int r = 0; r < HMAP_DIM; r++) {
+		for (int c = 0; c < HMAP_DIM; c++) {
+			HMapCell cell = rf->grid[r][c];
+			if (hmap_cell_isempty(cell)) continue;
+
+			HandType ht     = hmap_fromcoords(r, c);
+			int      n_live = handtype_combos(ht, dead, buf);
+
+			float sum = 0.0f;
+			int   n   = 0;
+
+			for (int sc = 0; sc < SUIT_CLASS_COUNT; sc++) {
+				int count = hmap_cell_suit_total(cell, sc);
+				if (count == 0) continue;
+
+				/* Find the first live combo whose suit class matches sc.
+				   Suit isomorphism guarantees all combos in this bucket
+				   have identical equity against hero on this board. */
+				uint64_t canonical = 0;
+				for (int i = 0; i < n_live; i++) {
+					uint64_t mask = combo_toBitmask(buf[i]);
+					if ((int)classify_suit(board, mask) == sc) {
+						canonical = mask;
+						break;
+					}
+				}
+				if (!canonical) continue; /* shouldn't happen: count > 0 but no match */
+
+				/* Villain equity = equity of canonical combo against hero. */
+				float eq = (float)equity_fast(board, canonical, hero);
+				sum += eq * (float)count;
+				n   += count;
+			}
+
+			if (n > 0) sf.grid[r][c] = sum / (float)n;
+		}
+	}
+
+	return sf;
 }

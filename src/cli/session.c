@@ -148,8 +148,14 @@ Context get_vcontext(const Session* sesh) {
 TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
     HandTypeRange full = htr_full();
     RangeField rangefield = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
-
     return views_rangefield(r, &rangefield);
+}
+
+TextPanel* make_scalarfield_window(Context ctx, Renderer* r) {
+    HandTypeRange full = htr_full();
+    RangeField  rf = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
+    ScalarField sf = scalar_build(&rf, ctx.dead, ctx.board, ctx.hero_mask);
+    return views_scalarfield(r, &sf);
 }
 
 // ------------------------------------------------------------------
@@ -160,6 +166,13 @@ static void print_hero(Session* sesh) {
 	FILE* out = render_get_sink(&sesh->renderer);
 	fprintf(out, "hero: ");
 	render_combo(&sesh->renderer, sesh->game.playerhands[0]);
+	fprintf(out, "\n");
+}
+
+static void print_villain(Session* sesh) {
+	FILE* out = render_get_sink(&sesh->renderer);
+	fprintf(out, "villain: ");
+	render_combo(&sesh->renderer, sesh->game.playerhands[1]);
 	fprintf(out, "\n");
 }
 
@@ -213,6 +226,13 @@ static int cmd_hero(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     op_ensure_hero(sesh);
     print_hero(sesh);
+    return CMD_OK;
+}
+
+static int cmd_villain(Session* sesh, int argc, char** argv) {
+    (void)argc; (void)argv;
+    op_ensure_hero(sesh);
+    print_villain(sesh);
     return CMD_OK;
 }
 
@@ -285,6 +305,21 @@ static int cmd_analyze(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+static int cmd_equity(Session* sesh, int argc, char** argv) {
+    (void)argc; (void)argv;
+
+    op_ensure_hero(sesh);
+    op_ensure_board(sesh);
+
+    Context ctx = get_context(sesh);
+    TextPanel* window = make_scalarfield_window(ctx, &sesh->renderer);
+
+    panel_print(window, &sesh->renderer);
+    panel_free(window);
+
+    return CMD_OK;
+}
+
 static int cmd_layout(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
 
@@ -295,10 +330,18 @@ static int cmd_layout(Session* sesh, int argc, char** argv) {
 
     for (int i = 0; i < sesh->street_count; i++) {
         Context hero_ctx = get_context(sesh);
+        Context villain_ctx = get_vcontext(sesh);
 
-        TextPanel* hero_pov = make_rangefield_window(hero_ctx, &sesh->renderer);
+        TextPanel* hero_pov    = make_rangefield_window(hero_ctx, &sesh->renderer);
+        TextPanel* h_equity    = make_scalarfield_window(hero_ctx, &sesh->renderer);
+        TextPanel* h_joined    = panel_join_consume(hero_pov, h_equity, 2);
 
-        layout = (layout == NULL) ? hero_pov : panel_join_consume(layout, hero_pov, 2);
+        TextPanel* villain_pov = make_rangefield_window(villain_ctx, &sesh->renderer);
+        TextPanel* v_equity    = make_scalarfield_window(villain_ctx, &sesh->renderer);
+        TextPanel* v_joined    = panel_join_consume(villain_pov, v_equity, 2);
+
+        TextPanel* combined    = panel_stack_consume(h_joined, v_joined);
+        layout = (layout == NULL) ? combined : panel_join_consume(layout, combined, 2);
     }
 
     panel_print(layout, &sesh->renderer);
@@ -330,11 +373,13 @@ static const Command session_cmds[] = {
 	{ "deal",    'd', "deal",                        "deal hero hand randomly from deck",                     cmd_deal           },
 	{ "undodeal",'u', "undodeal",                    "undo last deal action",                                 cmd_undodeal       },
 	{ "street",  's', "street",                      "deal next community street from deck",                  cmd_street         },
-	{ "print hero",  'h', "print hero",  "print hero hand",      cmd_hero  },
-	{ "print board", 'b', "print board", "print cards on board", cmd_board },
+	{ "print hero",    'h', "print hero",    "print hero hand",      cmd_hero    },
+	{ "print villain", 'V', "print villain", "print villain hand",   cmd_villain },
+	{ "print board",   'b', "print board",   "print cards on board", cmd_board   },
 	{ "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
 	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
+	{ "equity",   'e', "equity",                        "build equity ScalarField vs hero + board",               cmd_equity         },
 	{ "layout",   'l', "layout",                       "multi-street rangefield view (hero above villain, streets side by side)", cmd_layout },
 	{ "reset",   'c', "reset",                       "clear all session state (deck, range)",                 cmd_reset          },
 	{ "help",    '?', "help",                        "print this command list",                               cmd_help           },

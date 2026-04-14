@@ -21,4 +21,9 @@ TextPanel* views_legend(Renderer* r);
 /* Combo state count summary block. */
 TextPanel* views_state_summary(const ComboStateCounts* c);
 
+/* ScalarField grid — renders each cell as a ramp symbol in [low→high].
+   Cells with value < 0 (sentinel: no live combos) use symbol_empty.
+   Uses r->symset; mode and width are ignored (always CELL_1 style). */
+TextPanel* views_scalarfield(Renderer* r, const ScalarField* sf);
+
 #endif

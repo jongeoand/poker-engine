@@ -151,6 +151,24 @@ TextPanel* views_legend(Renderer* rend) {
 	return p;
 }
 
+TextPanel* views_scalarfield(Renderer* r, const ScalarField* sf) {
+	TextPanel* p = panel_create();
+	if (!p) return NULL;
+	char row[256];
+	for (int ri = 0; ri < HMAP_DIM; ri++) {
+		int len = 0;
+		for (int col = 0; col < HMAP_DIM; col++) {
+			float v = sf->grid[ri][col];
+			if (v < 0.0f)
+				len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_empty(r->symset));
+			else
+				len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(r->symset, (double)v));
+		}
+		panel_add_line(p, row);
+	}
+	return p;
+}
+
 TextPanel* views_state_summary(const ComboStateCounts* c) {
 	TextPanel* p = panel_create();
 	if (!p) return NULL;
