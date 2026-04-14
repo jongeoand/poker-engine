@@ -2,7 +2,6 @@
 #define HANDMAP_H_
 
 #include "analysis/combostate.h"
-#include "core/handtype.h"
 #include "range/htrange.h"
 
 // Combo state distribution for all combos belonging to one hand type.
@@ -36,9 +35,5 @@ int hmap_total(const RangeField* f);
 
 // Sum of the `s` bucket across all 169 cells.
 int hmap_count(const RangeField* f, ComboState s);
-
-
-void     hmap_tocoords(HandType ht, int* row, int* col);
-HandType hmap_fromcoords(int row, int col);
 
 #endif
