@@ -1,39 +1,99 @@
 #ifndef HANDMAP_H_
 #define HANDMAP_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "map/handmatrix.h"
 #include "analysis/combostate.h"
 #include "range/htrange.h"
 
-// Combo state distribution for all combos belonging to one hand type.
-// eg. for AKs: counts across {AhKh, AcKc, AdKd, AsKs} and their total.
-typedef struct {
-	int statecounts[COMBO_STATE_COUNT];
-	int combo_total;
-} HMapCell;
+// ------------------------------------------------------------------
+// HMapCell — packed (ComboState × SuitClass) count matrix.
+//
+// A single uint64_t encodes a 4×4 grid of 4-bit nibble counts,
+// one per (ComboState, SuitClass) pair:
+//
+//   bits [s*16 + u*4 + 3 : s*16 + u*4]  =  count for (state s, suit class u)
+//
+// Max value per nibble: 12 (max combos per hand type for offsuit hands).
+// 12 < 16 = 2^4, so no nibble can overflow.
+//
+// Constraint: COMBO_STATE_COUNT == 4 and SUIT_CLASS_COUNT == 4
+// (4 states × 4 suit classes × 4 bits = 64 bits exactly).
+// ------------------------------------------------------------------
+typedef uint64_t HMapCell;
 
-void hmap_cell_clear(HMapCell* p);
-bool hmap_cell_isempty(const HMapCell* p);
+#define HMAP_CELL_SHIFT(state, suit) ((state) * 16 + (suit) * 4)
+
+// Count for a specific (state, suit) pair.
+static inline int hmap_cell_get(HMapCell cell, int state, int suit) {
+	return (int)((cell >> HMAP_CELL_SHIFT(state, suit)) & 0xFULL);
+}
+
+// Increment the count for (state, suit) by 1.
+static inline void hmap_cell_add(HMapCell* p, int state, int suit) {
+	*p += (1ULL << HMAP_CELL_SHIFT(state, suit));
+}
+
+// True when no combos have been recorded (all nibbles zero).
+static inline bool hmap_cell_isempty(HMapCell cell) {
+	return cell == 0;
+}
+
+// Total combos in a given ComboState (sum across all SuitClasses).
+static inline int hmap_cell_state_total(HMapCell cell, int state) {
+	int n = 0;
+	for (int u = 0; u < SUIT_CLASS_COUNT; u++)
+		n += hmap_cell_get(cell, state, u);
+	return n;
+}
+
+// Total combos in a given SuitClass (sum across all ComboStates).
+static inline int hmap_cell_suit_total(HMapCell cell, int suit) {
+	int n = 0;
+	for (int s = 0; s < COMBO_STATE_COUNT; s++)
+		n += hmap_cell_get(cell, s, suit);
+	return n;
+}
+
+// Total combos in the cell (sum of all 16 nibbles).
+static inline int hmap_cell_total(HMapCell cell) {
+	int n = 0;
+	for (int s = 0; s < COMBO_STATE_COUNT; s++)
+		n += hmap_cell_state_total(cell, s);
+	return n;
+}
 
 // True when more than one ComboState bucket is non-zero.
-bool hmap_cell_ismixed(const HMapCell* p);
+static inline bool hmap_cell_ismixed(HMapCell cell) {
+	int seen = 0;
+	for (int s = 0; s < COMBO_STATE_COUNT; s++)
+		if (hmap_cell_state_total(cell, s) > 0 && ++seen > 1) return true;
+	return false;
+}
 
-// Increment the bucket for `state` and bump combo_total by 1.
-void hmap_cell_add(HMapCell* p, ComboState state);
-void hmap_cell_merge(HMapCell* dst, const HMapCell* src);
+// Merge src into dst nibble-by-nibble (direct addition would carry across nibbles).
+void hmap_cell_merge(HMapCell* dst, HMapCell src);
 
+// ------------------------------------------------------------------
+// RangeField — 13×13 grid of HMapCell, one per hand type.
+// ------------------------------------------------------------------
+typedef HandMatrix(HMapCell) RangeField;
 
-// RangeField 
-typedef HandMatrix(HmapCell) Rangefield;
-
-RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, uint64_t hero);
-
-// Zero every HMapCell in the grid.
+// Zero every cell.
 void hmap_clear(RangeField* f);
 
-// Sum of combo_total across all 169 cells.
+// Build a RangeField from a support and game state.
+//   dead  = board | hero bitmask  (blocks combos from the stream)
+//   board = community card bitmask (ComboState + SuitClass classification)
+//   hero  = hero hole card bitmask
+RangeField hmap_build(const HandTypeRange* htr, uint64_t dead, uint64_t board, uint64_t hero);
+
+// Sum of hmap_cell_total across all 169 cells.
 int hmap_total(const RangeField* f);
 
-// Sum of the `s` bucket across all 169 cells.
+// Sum of hmap_cell_state_total(cell, s) across all 169 cells.
 int hmap_count(const RangeField* f, ComboState s);
 
 #endif

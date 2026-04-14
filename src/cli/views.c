@@ -6,21 +6,22 @@
 // ---- Helpers ----
 
 // Select the dominant ComboState for a cell and compute fractions.
-// Returns 0 if cell is empty (combo_total == 0).
-static int cell_analysis(const HMapCell* cell,
+// Returns 0 if the cell is empty.
+static int cell_analysis(HMapCell cell,
                          ComboState* dominant,
                          double* dom_frac,
                          double* draw_frac)
 {
-	if (cell->combo_total == 0) return 0;
+	int total = hmap_cell_total(cell);
+	if (total == 0) return 0;
 
 	*dominant = COMBO_AHEAD;
 	for (int s = 1; s < COMBO_STATE_COUNT; s++)
-		if (cell->statecounts[s] > cell->statecounts[*dominant])
+		if (hmap_cell_state_total(cell, s) > hmap_cell_state_total(cell, (int)*dominant))
 			*dominant = (ComboState)s;
 
-	*dom_frac  = (double)cell->statecounts[*dominant] / cell->combo_total;
-	*draw_frac = (double)cell->statecounts[COMBO_BEHIND_LIVE] / cell->combo_total;
+	*dom_frac  = (double)hmap_cell_state_total(cell, (int)*dominant) / total;
+	*draw_frac = (double)hmap_cell_state_total(cell, COMBO_BEHIND_LIVE) / total;
 	return 1;
 }
 
@@ -63,7 +64,7 @@ TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
 	for (int ri = 0; ri < HMAP_DIM; ri++) {
 		int len = 0;
 		for (int col = 0; col < HMAP_DIM; col++) {
-			const HMapCell* cell = &f->grid[ri][col];
+			HMapCell cell = f->grid[ri][col];
 			ComboState dominant;
 			double dom_frac, draw_frac;
 			int filled = cell_analysis(cell, &dominant, &dom_frac, &draw_frac);
