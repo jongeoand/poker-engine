@@ -130,10 +130,11 @@ void panel_pad_height(TextPanel* p, int32_t height) {
 
 /* ---- Composition — non-consuming ---- */
 
-TextPanel* panel_stack(const TextPanel* above, const TextPanel* below) {
+TextPanel* panel_stack(const TextPanel* above, const TextPanel* below, int32_t gap) {
     TextPanel* result = panel_create();
     if (!result) return NULL;
     for (int32_t i = 0; i < above->line_count; i++) panel_add_line(result, above->lines[i]);
+    for (int32_t i = 0; i < gap; i++) panel_add_line(result, "");
     for (int32_t i = 0; i < below->line_count; i++) panel_add_line(result, below->lines[i]);
     return result;
 }
@@ -189,8 +190,8 @@ TextPanel* panel_join(const TextPanel* left, const TextPanel* right, int32_t gap
 
 /* ---- Composition — consuming ---- */
 
-TextPanel* panel_stack_consume(TextPanel* above, TextPanel* below) {
-    TextPanel* result = panel_stack(above, below);
+TextPanel* panel_stack_consume(TextPanel* above, TextPanel* below, int32_t gap) {
+    TextPanel* result = panel_stack(above, below, gap);
     panel_free(above);
     panel_free(below);
     return result;

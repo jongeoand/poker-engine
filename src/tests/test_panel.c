@@ -112,7 +112,7 @@ void test_panel(void) {
         panel_add_line(b, "bot2");
         panel_add_line(b, "bot3");
 
-        TextPanel* s = panel_stack(a, b);
+        TextPanel* s = panel_stack(a, b, 0);
 
         bool height_ok  = (panel_height(s) == 5);
         bool order_ok   = (strcmp(s->lines[0], "top1") == 0 &&
@@ -137,7 +137,7 @@ void test_panel(void) {
         TextPanel* b = panel_create();
         panel_add_line(b, "Y");
 
-        TextPanel* s = panel_stack_consume(a, b);
+        TextPanel* s = panel_stack_consume(a, b, 0);
         /* a and b are now freed; only s is valid */
 
         bool height_ok = (panel_height(s) == 2);
@@ -319,7 +319,7 @@ void test_panel(void) {
         panel_add_line(bot, "BBB");
         panel_add_line(bot, "CCC");
 
-        TextPanel* s = panel_stack_consume(top, bot);
+        TextPanel* s = panel_stack_consume(top, bot, 0);
 
         char*  buf = NULL;
         size_t len = 0;

@@ -354,7 +354,7 @@ static int cmd_layout(Session* sesh, int argc, char** argv) {
         TextPanel* v_equity    = make_scalarfield_window(villain_ctx, &sesh->renderer);
         TextPanel* v_joined    = panel_join_consume(villain_pov, v_equity, 2);
 
-        TextPanel* combined    = panel_stack_consume(h_joined, v_joined);
+        TextPanel* combined    = panel_stack_consume(h_joined, v_joined, 1);
         layout = (layout == NULL) ? combined : panel_join_consume(layout, combined, 2);
     }
 

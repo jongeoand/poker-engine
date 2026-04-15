@@ -30,11 +30,11 @@ void panel_pad_width(TextPanel* p, int32_t width);
 void panel_pad_height(TextPanel* p, int32_t height);
 
 /* Composition — non-consuming (inputs unchanged) */
-TextPanel* panel_stack(const TextPanel* above, const TextPanel* below);
+TextPanel* panel_stack(const TextPanel* above, const TextPanel* below, int32_t gap);
 TextPanel* panel_join(const TextPanel* left, const TextPanel* right, int32_t gap);
 
 /* Composition — consuming (inputs freed after use) */
-TextPanel* panel_stack_consume(TextPanel* above, TextPanel* below);
+TextPanel* panel_stack_consume(TextPanel* above, TextPanel* below, int32_t gap);
 TextPanel* panel_join_consume(TextPanel* left, TextPanel* right, int32_t gap);
 
 /* Output */

@@ -23,7 +23,7 @@ void visual_experiments(void) {
 
             TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
             TextPanel* p_villain = views_rangefield(&r, &rf_villain);
-            TextPanel* stacked   = panel_stack_consume(p_hero, p_villain);
+            TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
 
             view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
 
@@ -67,7 +67,7 @@ void visual_experiments(void) {
 
                     TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
                     TextPanel* p_villain = views_rangefield(&r, &rf_villain);
-                    TextPanel* stacked   = panel_stack_consume(p_hero, p_villain);
+                    TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
 
                     view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
                 }
@@ -102,7 +102,7 @@ void visual_experiments(void) {
 
                 TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
                 TextPanel* p_villain = views_rangefield(&r, &rf_villain);
-                TextPanel* stacked   = panel_stack_consume(p_hero, p_villain);
+                TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
 
                 view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
 

@@ -20,7 +20,7 @@ void visual_test(void) {
 
     TextPanel* p_hero_flop    = views_rangefield(&r, &rf_hero_flop);
     TextPanel* p_villain_flop = views_rangefield(&r, &rf_villain_flop);
-    TextPanel* stacked_flop   = panel_stack_consume(p_hero_flop, p_villain_flop);
+    TextPanel* stacked_flop   = panel_stack_consume(p_hero_flop, p_villain_flop, 0);
     
     /* Turn — same layout */
     deal_street(&game);
@@ -30,7 +30,7 @@ void visual_test(void) {
 
     TextPanel* p_hero_turn    = views_rangefield(&r, &rf_hero_turn);
     TextPanel* p_villain_turn = views_rangefield(&r, &rf_villain_turn);
-    TextPanel* stacked_turn   = panel_stack_consume(p_hero_turn, p_villain_turn);
+    TextPanel* stacked_turn   = panel_stack_consume(p_hero_turn, p_villain_turn, 0);
 
     /* Join flop | turn side-by-side and display */
     TextPanel* joined = panel_join_consume(stacked_flop, stacked_turn, 2);
@@ -41,7 +41,7 @@ void visual_test(void) {
     TextPanel* p_hero_river    = views_rangefield(&r, &rf_hero_river);
     TextPanel* p_villain_river = views_rangefield(&r, &rf_villain_river);
     
-    TextPanel* stacked_river = panel_stack_consume(p_hero_river, p_villain_river);
+    TextPanel* stacked_river = panel_stack_consume(p_hero_river, p_villain_river, 0);
     TextPanel* final = panel_join_consume(joined, stacked_river, 2);
 
     panel_print(final, &r);
