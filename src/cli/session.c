@@ -176,15 +176,44 @@ TextPanel* make_layout(const Session* sesh, Context ctx) {
     return layout;
 }
 
-// TODO: remove this code, it's old 
-TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
+TextPanel* make_dashboard(const Session* sesh, Context ctx) {
     HandTypeRange full = htr_full();
-    RangeField rangefield = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
-    if (r->mode == RENDER_EQUITY) {
-        ScalarField sf = scalar_build(&rangefield, ctx.dead, ctx.board, ctx.hero_mask);
-        return views_rangefield(r, &rangefield, &sf);
+
+    TextPanel* dashboard = NULL;
+
+    Renderer r = render_default();
+    r.width  = CELL_2;
+    r.symset = SYMSET_UNICODE;
+
+    RenderMode modes[] = {RENDER_PURITY, RENDER_EQUITY, RENDER_DRAW, RENDER_FLUSH, RENDER_JOINT};
+    int nmode = (int)(sizeof(modes) / sizeof(modes[0]));
+
+    for (int i = 0; i < nmode; i++) {
+        r.mode = modes[i];
+
+        TextPanel* row = NULL;
+
+        for (int street = 0; street < sesh->street_count; street++) {
+            uint64_t board = sesh->street_boards[street];
+            RangeField matrix = hmap_build(&full, ctx.dead, board, ctx.hero_mask);
+
+            TextPanel* view;
+            if (r.mode != RENDER_EQUITY) { view = views_rangefield(&r, &matrix, NULL); }
+            else {
+                ScalarField sf = scalar_build(&matrix, ctx.dead, board, ctx.hero_mask);
+                view = views_rangefield(&r, &matrix, &sf);
+            }
+
+            row = (row == NULL) ? view : panel_join_consume(row, view, 1);
+        }
+
+        TextPanel* legend = views_legend(&r);
+        row = (row == NULL) ? legend : panel_join_consume(row, legend, 1);
+
+        dashboard = (dashboard == NULL) ? row : panel_stack_consume(dashboard, row, 2);
     }
-    return views_rangefield(r, &rangefield, NULL);
+
+    return dashboard;
 }
 
 // ------------------------------------------------------------------
@@ -287,7 +316,6 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
-// TODO: update this to work with new make_layout
 static int cmd_combostream(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     op_ensure_hero(sesh);
@@ -303,7 +331,8 @@ static int cmd_combostream(Session* sesh, int argc, char** argv) {
         op_assignvillain(sesh, current);
         
         Context ctx = get_vcontext(sesh);
-        TextPanel* view = make_rangefield_window(ctx, &sesh->renderer);
+        TextPanel* view = make_layout(sesh, ctx);
+
         panel_print(view, &sesh->renderer);
         panel_free(view);
 
@@ -358,14 +387,17 @@ static int cmd_render_settings(Session* sesh, int argc, char** argv) {
 }
 
 static int cmd_analyze(Session* sesh, int argc, char** argv) {
-    (void)argc; (void)argv;
-
     op_ensure_hero(sesh);
     op_ensure_board(sesh);
 
+    bool dashboard = false;
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "-d") == 0) { dashboard = true; break; }
+    }
+
     Context ctx = get_context(sesh);
-    TextPanel* window = make_layout(sesh, ctx);
- 
+    TextPanel* window = dashboard ? make_dashboard(sesh, ctx) : make_layout(sesh, ctx);
+
     panel_print(window, &sesh->renderer);
     panel_free(window);
 
