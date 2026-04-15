@@ -3,10 +3,9 @@
 A poker study tool for range analysis and strategic exploration, written in C with no external dependencies.
 
 This project focuses on making the structural math of poker visible: how ranges interact, how equity shifts across streets, and where strategic pressure emerges.
+The end goal is to create a tool for visualizing the math that informs strategic decision making, rather than another GTO counterfactual regret solver.:
 
-Not a solver — a tool for understanding.
-
-![Architecture Overview](docs/poker-overview.png)
+![CLI Screenshot](docs/poker-engine-session.png)
 
 ## Project direction
 
@@ -39,7 +38,8 @@ The mathematical core of the engine is largely implemented:
 
 Active development is focused on the CLI layer — the interactive session, panel-based layout engine, and multi-view analysis output. The panel system was recently implemented and will support richer dashboards combining hand maps, summaries, transition reports, and debug views. Not everything is wired up yet; there is some basic panel integration with interactive sessions, but it is not yet complete.
 
-Another area of active development is implementing more mapping and symbolic representations for the visual grammar of the CLI. 
+Another area of active development is implementing more mapping and symbolic representations for the visual grammar of the CLI.
+
 ## Build
 
 Requires GCC with C11 support. No external dependencies.
@@ -47,7 +47,7 @@ Requires GCC with C11 support. No external dependencies.
 ```
 make             # build ./poker
 make test        # build ./poker_test and run tests
-make test visual # build ./poker_visual and run visual tests 
+make visual      # build ./poker_visual and run visual tests 
 ```
 
 ## Usage
@@ -56,7 +56,7 @@ make test visual # build ./poker_visual and run visual tests
 ./poker
 ```
 
-Press `s` at the launch screen to start a session. From the `poker> ` prompt you can deal hands, advance streets, inspect range structure, and run analysis commands. Type `help` to see available commands.
+Press `s` at the launch screen to start a session. From the `poker> ` prompt you can deal hands, advance streets, inspect range structure, and run analysis commands. Type `help` to see available commands. Type `B` to deal a hero, villain, and street simultaneously. Then, enter `a -d` from the `poker> ` prompt to see several of the ways the program can display computed results.
 
 ## Architecture
 
@@ -70,6 +70,8 @@ sim/      — Game state, deal logic, equity calculation
 analysis/ — Combo classification, structural range features, range-field construction
 cli/      — REPL, session management, panel layout, rendering
 ```
+
+![Architecture Overview](docs/poker-overview.png)
 
 See `docs/` for UML diagrams of each layer.
 
