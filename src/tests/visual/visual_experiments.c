@@ -21,8 +21,8 @@ void visual_experiments(void) {
             RangeField rf_hero    = hmap_build(&full, heromask    | game.board, game.board, heromask);
             RangeField rf_villain = hmap_build(&full, villainmask | game.board, game.board, villainmask);
 
-            TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
-            TextPanel* p_villain = views_rangefield(&r, &rf_villain);
+            TextPanel* p_hero    = views_rangefield(&r, &rf_hero, NULL);
+            TextPanel* p_villain = views_rangefield(&r, &rf_villain, NULL);
             TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
 
             view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
@@ -50,6 +50,9 @@ void visual_experiments(void) {
         uint64_t boards[3]   = { flop, turn, river };
 
         HandTypeRange full = htr_full();
+        
+        r.width = CELL_2;
+        r.mode = RENDER_JOINT;
 
         for (int i = 0; i < 52; i++) {
             for (int j = i + 1; j < 52; j++) {
@@ -65,8 +68,8 @@ void visual_experiments(void) {
                     RangeField rf_hero    = hmap_build(&full, heromask    | board, board, heromask);
                     RangeField rf_villain = hmap_build(&full, villainmask | board, board, villainmask);
 
-                    TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
-                    TextPanel* p_villain = views_rangefield(&r, &rf_villain);
+                    TextPanel* p_hero    = views_rangefield(&r, &rf_hero, NULL);
+                    TextPanel* p_villain = views_rangefield(&r, &rf_villain, NULL);
                     TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
 
                     view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
@@ -77,40 +80,57 @@ void visual_experiments(void) {
             }
         }
     }
-
-    /* --- Experiment 3: 25 random games, flop / turn / river --- */
-    {
+    
+    // Experiment 3
+    {   
+        r = render_default();
         render_heading(&r, "Experiment 3");
+        
+        Game game = make_game(2);
+        
+        Combo hero = game.playerhands[0];
+        uint64_t hmask = toBitmask(hero.a) | toBitmask(hero.b);
+
+        Combo villain = game.playerhands[1];
+        uint64_t vmask = toBitmask(villain.a) | toBitmask(villain.b);
+        
+        deal_street(&game); uint64_t flop  = game.board;
+        deal_street(&game); uint64_t turn  = game.board;
+        deal_street(&game); uint64_t river = game.board;
+        uint64_t boards[3] = { flop, turn, river };
+        
+        Renderer r3 = render_default();
+        r3.symset = SYMSET_UNICODE;
+        
         HandTypeRange full = htr_full();
-
-        for (int k = 0; k < 25; k++) {
-            Game game = make_game(2);
-            TextPanel* view = NULL;
-
-            deal_players(&game);
-
-            Combo    hero        = game.playerhands[0];
-            Combo    villain     = game.playerhands[1];
-            uint64_t heromask    = toBitmask(hero.a)    | toBitmask(hero.b);
-            uint64_t villainmask = toBitmask(villain.a) | toBitmask(villain.b);
+        
+        for (int c = 0; c < 4; c++) {
+            r3.width = (CellWidth) c;
+            for (int i = 0; i < 7; i++) {
+                 r3.mode = (RenderMode) i;
             
-            for (int i = 0; i < 3; i++) {
-                if (i == 0) deal_street(&game);
+                TextPanel* row = NULL;
 
-                RangeField rf_hero    = hmap_build(&full, heromask    | game.board, game.board, heromask);
-                RangeField rf_villain = hmap_build(&full, villainmask | game.board, game.board, villainmask);
+                for (int s = 0; s < 3; s++) {
+                     uint64_t board = boards[s];
 
-                TextPanel* p_hero    = views_rangefield(&r, &rf_hero);
-                TextPanel* p_villain = views_rangefield(&r, &rf_villain);
-                TextPanel* stacked   = panel_stack_consume(p_hero, p_villain, 0);
+                    RangeField rfh = hmap_build(&full, hmask | board, board, hmask);
 
-                view = (view == NULL) ? stacked : panel_join_consume(view, stacked, 2);
+                    TextPanel* etching_h = views_rangefield(&r3, &rfh, NULL);
 
-                if (i < 2) deal_street(&game);
+                    row = (row == NULL) ? etching_h : panel_join_consume(row, etching_h, 2);
+                }
+
+                TextPanel* legend = views_legend(&r3);
+                row = panel_join_consume(row, legend, 1);
+                
+                panel_print(row, &r3);
+                panel_free(row);
+                render_blank(&r);
             }
 
-            panel_print(view, &r);
-            panel_free(view);
+            render_blank(&r);
+            render_blank(&r);
         }
     }
 }

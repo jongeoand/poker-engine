@@ -18,8 +18,8 @@ void visual_test(void) {
     RangeField rf_hero_flop    = hmap_build(&full, heromask    | game.board, game.board, heromask);
     RangeField rf_villain_flop = hmap_build(&full, villainmask | game.board, game.board, villainmask);
 
-    TextPanel* p_hero_flop    = views_rangefield(&r, &rf_hero_flop);
-    TextPanel* p_villain_flop = views_rangefield(&r, &rf_villain_flop);
+    TextPanel* p_hero_flop    = views_rangefield(&r, &rf_hero_flop, NULL);
+    TextPanel* p_villain_flop = views_rangefield(&r, &rf_villain_flop, NULL);
     TextPanel* stacked_flop   = panel_stack_consume(p_hero_flop, p_villain_flop, 0);
     
     /* Turn — same layout */
@@ -28,8 +28,8 @@ void visual_test(void) {
     RangeField rf_hero_turn    = hmap_build(&full, heromask    | game.board, game.board, heromask);
     RangeField rf_villain_turn = hmap_build(&full, villainmask | game.board, game.board, villainmask);
 
-    TextPanel* p_hero_turn    = views_rangefield(&r, &rf_hero_turn);
-    TextPanel* p_villain_turn = views_rangefield(&r, &rf_villain_turn);
+    TextPanel* p_hero_turn    = views_rangefield(&r, &rf_hero_turn, NULL);
+    TextPanel* p_villain_turn = views_rangefield(&r, &rf_villain_turn, NULL);
     TextPanel* stacked_turn   = panel_stack_consume(p_hero_turn, p_villain_turn, 0);
 
     /* Join flop | turn side-by-side and display */
@@ -38,8 +38,8 @@ void visual_test(void) {
     RangeField rf_hero_river    = hmap_build(&full, heromask    | game.board, game.board, heromask);
     RangeField rf_villain_river = hmap_build(&full, villainmask | game.board, game.board, villainmask);
 
-    TextPanel* p_hero_river    = views_rangefield(&r, &rf_hero_river);
-    TextPanel* p_villain_river = views_rangefield(&r, &rf_villain_river);
+    TextPanel* p_hero_river    = views_rangefield(&r, &rf_hero_river, NULL);
+    TextPanel* p_villain_river = views_rangefield(&r, &rf_villain_river, NULL);
     
     TextPanel* stacked_river = panel_stack_consume(p_hero_river, p_villain_river, 0);
     TextPanel* final = panel_join_consume(joined, stacked_river, 2);
