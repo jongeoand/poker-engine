@@ -36,56 +36,30 @@ TextPanel* views_htr_grid(const HandTypeRange* h) {
 	return p;
 }
 
-TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
+TextPanel* views_rangefield(Renderer* rend, const RangeField* f, const ScalarField* sf) {
 	TextPanel* p = panel_create();
 	if (!p) return NULL;
 	char row[256];
 	for (int ri = 0; ri < HMAP_DIM; ri++) {
 		int len = 0;
 		for (int col = 0; col < HMAP_DIM; col++) {
-			CellData d = cell_analyze(f->grid[ri][col]);
-
-			switch (rend->width) {
-			case CELL_1:
-				if (d.empty) {
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_empty(rend->symset));
-					break;
-				}
-				switch (rend->mode) {
-				case RENDER_STATE:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, d.dominant_state));
-					break;
-				case RENDER_PURITY:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.dom_frac));
-					break;
-				case RENDER_DRAW:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.draw_frac));
-					break;
-				case RENDER_SUIT:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_suit(rend->symset, d.dominant_suit));
-					break;
-				case RENDER_FLUSH:
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_ramp(rend->symset, d.flush_frac));
-					break;
-				}
-				break;
-
-			case CELL_2:
-				if (d.empty) {
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s  ", symbol_empty(rend->symset));
-					break;
-				}
-				len += snprintf(row + len, sizeof(row) - (size_t)len, "%s%s ",
-					symbol_state(rend->symset, d.dominant_state),
-					symbol_suit(rend->symset, d.dominant_suit_in_state));
-				break;
-
-			case CELL_4:
+			if (rend->width != CELL_4) {
+				/* CELL_1 and CELL_2: fully delegated to symbol_cell. */
+				CellSample cs = {
+				.cell   = f->grid[ri][col],
+				.equity = (sf != NULL) ? sf->grid[ri][col] : -1.0f,
+			};
+				char sym_buf[16];
+				symbol_cell(&cs, rend, sym_buf, sizeof(sym_buf));
+				len += snprintf(row + len, sizeof(row) - (size_t)len, "%s", sym_buf);
+			} else {
+				/* CELL_4: label-based layout — hand type name + state glyph.
+				   symbol_cell is not used here because the first three columns
+				   are consumed by the rank label (e.g. "AKs", " QQ", "T9o"). */
+				CellData d = cell_analyze(f->grid[ri][col]);
 				if (d.empty) {
 					len += snprintf(row + len, sizeof(row) - (size_t)len, "  .  ");
-					break;
-				}
-				{
+				} else {
 					uint8_t hi_rank = (uint8_t)(ri <= col ? 12 - ri : 12 - col);
 					uint8_t lo_rank = (uint8_t)(ri <= col ? 12 - col : 12 - ri);
 					char hi = rank_to_char(hi_rank);
@@ -96,9 +70,9 @@ TextPanel* views_rangefield(Renderer* rend, const RangeField* f) {
 						len += snprintf(row + len, sizeof(row) - (size_t)len, "%c%cs", hi, lo);
 					else
 						len += snprintf(row + len, sizeof(row) - (size_t)len, "%c%co", hi, lo);
-					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ", symbol_state(rend->symset, d.dominant_state));
+					len += snprintf(row + len, sizeof(row) - (size_t)len, "%s ",
+					    symbol_state(rend->symset, d.dominant_state));
 				}
-				break;
 			}
 		}
 		panel_add_line(p, row);
@@ -146,6 +120,35 @@ TextPanel* views_legend(Renderer* rend) {
 		for (int i = 0; i <= 8; i++)
 			len += snprintf(buf + len, sizeof(buf) - (size_t)len, "%s ", symbol_ramp(rend->symset, i / 8.0));
 		panel_add_line(p, buf);
+		break;
+	case RENDER_EQUITY:
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len, "Legend (villain equity, low→high):  ");
+		for (int i = 0; i <= 8; i++)
+			len += snprintf(buf + len, sizeof(buf) - (size_t)len, "%s ", symbol_ramp(rend->symset, i / 8.0));
+		panel_add_line(p, buf);
+		break;
+	case RENDER_JOINT:
+		/* Two lines: one per glyph family used in CELL_2 joint encoding. */
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len,
+		    "Legend:  %s=ahead  %s=chop  %s=live  %s=dead  %s=empty",
+		    symbol_state(rend->symset, COMBO_AHEAD),
+		    symbol_state(rend->symset, COMBO_CHOP),
+		    symbol_state(rend->symset, COMBO_BEHIND_LIVE),
+		    symbol_state(rend->symset, COMBO_BEHIND_DEAD),
+		    symbol_empty(rend->symset));
+		panel_add_line(p, buf);
+		len = 0;
+		len += snprintf(buf + len, sizeof(buf) - (size_t)len,
+		    "         %s=no-flush  %s=backdoor  %s=flush-draw  %s=flush-made",
+		    symbol_suit(rend->symset, SUIT_NONE),
+		    symbol_suit(rend->symset, SUIT_BACKDOOR),
+		    symbol_suit(rend->symset, SUIT_FLUSH_DRAW),
+		    symbol_suit(rend->symset, SUIT_FLUSH_MADE));
+		panel_add_line(p, buf);
+		break;
+	case RENDER_ENTROPY:
+	case RENDER_VOLATILITY:
+		/* Not yet implemented. */
 		break;
 	}
 	return p;

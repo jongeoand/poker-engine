@@ -148,7 +148,11 @@ Context get_vcontext(const Session* sesh) {
 TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
     HandTypeRange full = htr_full();
     RangeField rangefield = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
-    return views_rangefield(r, &rangefield);
+    if (r->mode == RENDER_EQUITY) {
+        ScalarField sf = scalar_build(&rangefield, ctx.dead, ctx.board, ctx.hero_mask);
+        return views_rangefield(r, &rangefield, &sf);
+    }
+    return views_rangefield(r, &rangefield, NULL);
 }
 
 TextPanel* make_scalarfield_window(Context ctx, Renderer* r) {
@@ -282,24 +286,47 @@ static int cmd_combostream(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+static const char* mode_name(RenderMode m) {
+    switch (m) {
+    case RENDER_STATE:      return "state";
+    case RENDER_PURITY:     return "purity";
+    case RENDER_DRAW:       return "draw";
+    case RENDER_SUIT:       return "suit";
+    case RENDER_FLUSH:      return "flush";
+    case RENDER_EQUITY:     return "equity";
+    case RENDER_JOINT:      return "joint";
+    case RENDER_ENTROPY:    return "entropy";
+    case RENDER_VOLATILITY: return "volatility";
+    default:                return "?";
+    }
+}
+
 static int cmd_render_settings(Session* sesh, int argc, char** argv) {
     FILE* out = render_get_sink(&sesh->renderer);
 
     if (argc == 0) {
-        fprintf(out, "symset: %s  width: %d\n",
+        fprintf(out, "symset: %s  width: %d  mode: %s\n",
                 sesh->renderer.symset == SYMSET_UNICODE ? "unicode" : "ascii",
                 sesh->renderer.width == CELL_1 ? 1 :
-                sesh->renderer.width == CELL_2 ? 2 : 4);
+                sesh->renderer.width == CELL_2 ? 2 : 4,
+                mode_name(sesh->renderer.mode));
         return CMD_OK;
     }
     for (int i = 0; i < argc; i++) {
         const char* a = argv[i];
-        if      (strcmp(a, "unicode") == 0) sesh->renderer.symset = SYMSET_UNICODE;
-        else if (strcmp(a, "ascii")   == 0) sesh->renderer.symset = SYMSET_ASCII;
-        else if (strcmp(a, "1") == 0)       sesh->renderer.width  = CELL_1;
-        else if (strcmp(a, "2") == 0)       sesh->renderer.width  = CELL_2;
-        else if (strcmp(a, "4") == 0)       sesh->renderer.width  = CELL_4;
-        else fprintf(out, "unknown render setting '%s'  (unicode | ascii | 1 | 2 | 4)\n", a);
+        if      (strcmp(a, "unicode")     == 0) sesh->renderer.symset = SYMSET_UNICODE;
+        else if (strcmp(a, "ascii")       == 0) sesh->renderer.symset = SYMSET_ASCII;
+        else if (strcmp(a, "1")           == 0) sesh->renderer.width  = CELL_1;
+        else if (strcmp(a, "2")           == 0) sesh->renderer.width  = CELL_2;
+        else if (strcmp(a, "4")           == 0) sesh->renderer.width  = CELL_4;
+        else if (strcmp(a, "state")       == 0) sesh->renderer.mode   = RENDER_STATE;
+        else if (strcmp(a, "purity")      == 0) sesh->renderer.mode   = RENDER_PURITY;
+        else if (strcmp(a, "draw")        == 0) sesh->renderer.mode   = RENDER_DRAW;
+        else if (strcmp(a, "suit")        == 0) sesh->renderer.mode   = RENDER_SUIT;
+        else if (strcmp(a, "flush")       == 0) sesh->renderer.mode   = RENDER_FLUSH;
+        else if (strcmp(a, "equity")      == 0) sesh->renderer.mode   = RENDER_EQUITY;
+        else if (strcmp(a, "joint")       == 0) sesh->renderer.mode   = RENDER_JOINT;
+        else fprintf(out, "unknown setting '%s'  (unicode|ascii | 1|2|4 | state|purity|draw|suit|flush|equity|joint)\n", a);
     }
     return CMD_OK;
 }
@@ -394,7 +421,7 @@ static const Command session_cmds[] = {
 	{ "print board",   'b', "print board",   "print cards on board", cmd_board   },
 
     { "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
-	{ "render",  'R', "render [unicode|ascii|1|2|4]","toggle renderer settings",                              cmd_render_settings},
+	{ "render",  'R', "render [unicode|ascii|1|2|4|state|purity|draw|suit|flush|equity|joint]", "get/set renderer (symset, width, mode)", cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
 	{ "equity",   'e', "equity",                        "build equity ScalarField vs hero + board",               cmd_equity         },
 	{ "layout",   'l', "layout",                       "multi-street rangefield view (hero above villain, streets side by side)", cmd_layout },

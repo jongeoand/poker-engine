@@ -1,4 +1,7 @@
 #include "symbols.h"
+#include "analysis/celldata.h"
+#include <stddef.h>
+#include <stdio.h>
 
 static const char* STATE_ASCII[4] = { "A", "C", "L", "D" };
 
@@ -58,4 +61,106 @@ const char* symbol_suit(SymSet s, SuitClass suit) {
 
 const char* symbol_empty(SymSet s) {
 	return s == SYMSET_UNICODE ? "\xc2\xb7" : ".";
+}
+
+void symbol_cell(const CellSample* s, const Renderer* r, char* buf, size_t bufsz) {
+	/* Empty cell: consistent placeholder regardless of mode or width. */
+	if (hmap_cell_isempty(s->cell)) {
+		const char* e = symbol_empty(r->symset);
+		if (r->width == CELL_1)
+			snprintf(buf, bufsz, "%s ", e);
+		else
+			snprintf(buf, bufsz, "%s  ", e);   /* CELL_2 and CELL_4 fallback */
+		return;
+	}
+
+	CellData d = cell_analyze(s->cell);
+
+	if (r->width == CELL_1) {
+		const char* sym;
+		switch (r->mode) {
+		case RENDER_STATE:
+			sym = symbol_state(r->symset, d.dominant_state);
+			break;
+		case RENDER_PURITY:
+			sym = symbol_ramp(r->symset, d.dom_frac);
+			break;
+		case RENDER_DRAW:
+			sym = symbol_ramp(r->symset, d.draw_frac);
+			break;
+		case RENDER_SUIT:
+			sym = symbol_suit(r->symset, d.dominant_suit);
+			break;
+		case RENDER_FLUSH:
+			sym = symbol_ramp(r->symset, d.flush_frac);
+			break;
+		case RENDER_EQUITY:
+			/* Use equity ramp when available; degrade to dom_frac otherwise. */
+			sym = (s->equity >= 0.0f)
+			    ? symbol_ramp(r->symset, (double)s->equity)
+			    : symbol_ramp(r->symset, d.dom_frac);
+			break;
+		case RENDER_JOINT:
+			/* Cannot represent both dimensions in one glyph — show state. */
+			sym = symbol_state(r->symset, d.dominant_state);
+			break;
+		case RENDER_ENTROPY:
+		case RENDER_VOLATILITY:
+		default:
+			/* Not yet implemented — degrade to purity ramp. */
+			sym = symbol_ramp(r->symset, d.dom_frac);
+			break;
+		}
+		snprintf(buf, bufsz, "%s ", sym);
+		return;
+	}
+
+	/* CELL_2 (and CELL_4 fallback): two meaningful glyphs + one space.
+	   Convention: char[0] = primary signal, char[1] = orthogonal context.
+	   RENDER_JOINT is the canonical two-axis mode; single-axis modes pair
+	   their primary symbol with the most informative available second axis. */
+	const char* p1;
+	const char* p2;
+	switch (r->mode) {
+	case RENDER_STATE:
+		/* [state][purity_ramp] — dominant state with homogeneity modifier. */
+		p1 = symbol_state(r->symset, d.dominant_state);
+		p2 = symbol_ramp(r->symset, d.dom_frac);
+		break;
+	case RENDER_PURITY:
+		/* [purity_ramp][state] — purity primary, state as context. */
+		p1 = symbol_ramp(r->symset, d.dom_frac);
+		p2 = symbol_state(r->symset, d.dominant_state);
+		break;
+	case RENDER_DRAW:
+		/* [draw_ramp][state] — draw density primary, state as context. */
+		p1 = symbol_ramp(r->symset, d.draw_frac);
+		p2 = symbol_state(r->symset, d.dominant_state);
+		break;
+	case RENDER_SUIT:
+		/* [suit][state] — suit structure primary, state as context. */
+		p1 = symbol_suit(r->symset, d.dominant_suit);
+		p2 = symbol_state(r->symset, d.dominant_state);
+		break;
+	case RENDER_FLUSH:
+		/* [flush_ramp][suit] — flush fraction primary, suit type as context. */
+		p1 = symbol_ramp(r->symset, d.flush_frac);
+		p2 = symbol_suit(r->symset, d.dominant_suit);
+		break;
+	case RENDER_EQUITY:
+		/* [equity_ramp][suit] when available; fall through to JOINT otherwise. */
+		if (s->equity >= 0.0f) {
+			p1 = symbol_ramp(r->symset, (double)s->equity);
+			p2 = symbol_suit(r->symset, d.dominant_suit);
+			break;
+		}
+		/* fall through */
+	case RENDER_JOINT:
+	default:
+		/* [state][suit_in_state] — both orthogonal dimensions, canonical joint. */
+		p1 = symbol_state(r->symset, d.dominant_state);
+		p2 = symbol_suit(r->symset, d.dominant_suit_in_state);
+		break;
+	}
+	snprintf(buf, bufsz, "%s%s ", p1, p2);
 }

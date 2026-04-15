@@ -12,8 +12,11 @@
    Rows/cols from ACE(12) down to TWO(0); cells are 4 chars wide. */
 TextPanel* views_htr_grid(const HandTypeRange* h);
 
-/* Full field grid — respects r->mode, r->symset, r->width. */
-TextPanel* views_rangefield(Renderer* r, const RangeField* f);
+/* Full field grid — respects r->mode, r->symset, r->width.
+   sf is optional: pass a pre-built ScalarField when r->mode == RENDER_EQUITY
+   so each cell's equity is drawn from it; pass NULL for all other modes
+   (symbol_cell degrades RENDER_EQUITY to dom_frac when equity is absent). */
+TextPanel* views_rangefield(Renderer* r, const RangeField* f, const ScalarField* sf);
 
 /* Symbol legend for the current render mode and symbol set. */
 TextPanel* views_legend(Renderer* r);
