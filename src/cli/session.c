@@ -100,6 +100,10 @@ int op_dealstreet(Session* s) {
 
 int op_dealbomb(Session* s) {
     deal_bomb(&s->game);
+    s->last_cards_dealt = s->game.board;
+    s->has_hero  = true;
+    s->street_boards[s->street_count++] = s->game.board;
+    s->has_board = true;
     return CMD_OK;
 }
 
@@ -145,6 +149,34 @@ Context get_vcontext(const Session* sesh) {
 
 // Windows 
 
+TextPanel* make_layout(const Session* sesh, Context ctx) {
+    HandTypeRange full = htr_full();
+    
+    TextPanel* layout = NULL;
+    Renderer* r = (Renderer*)&sesh->renderer;
+
+    for (int street = 0; street < sesh->street_count; street++) {
+        uint64_t board = sesh->street_boards[street];
+        RangeField matrix = hmap_build(&full, ctx.dead, board, ctx.hero_mask);
+        
+        TextPanel* view;
+
+        if (sesh->renderer.mode != RENDER_EQUITY) { view = views_rangefield(r, &matrix, NULL); }
+        else {
+            ScalarField sf = scalar_build(&matrix, ctx.dead, board, ctx.hero_mask);
+            view = views_rangefield(r, &matrix, &sf);
+        }
+        
+        layout = (layout == NULL) ? view : panel_join_consume(layout, view, 1);
+    }
+    
+    TextPanel* legend = views_legend(r);
+    if (layout == NULL) return legend;
+    layout = panel_stack_consume(legend, layout, 1);
+    return layout;
+}
+
+// TODO: remove this code, it's old 
 TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
     HandTypeRange full = htr_full();
     RangeField rangefield = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
@@ -153,13 +185,6 @@ TextPanel* make_rangefield_window(Context ctx, Renderer* r) {
         return views_rangefield(r, &rangefield, &sf);
     }
     return views_rangefield(r, &rangefield, NULL);
-}
-
-TextPanel* make_scalarfield_window(Context ctx, Renderer* r) {
-    HandTypeRange full = htr_full();
-    RangeField  rf = hmap_build(&full, ctx.dead, ctx.board, ctx.hero_mask);
-    ScalarField sf = scalar_build(&rf, ctx.dead, ctx.board, ctx.hero_mask);
-    return views_scalarfield(r, &sf);
 }
 
 // ------------------------------------------------------------------
@@ -262,6 +287,7 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
+// TODO: update this to work with new make_layout
 static int cmd_combostream(Session* sesh, int argc, char** argv) {
     (void)argc; (void)argv;
     op_ensure_hero(sesh);
@@ -338,7 +364,7 @@ static int cmd_analyze(Session* sesh, int argc, char** argv) {
     op_ensure_board(sesh);
 
     Context ctx = get_context(sesh);
-    TextPanel* window = make_rangefield_window(ctx, &sesh->renderer);
+    TextPanel* window = make_layout(sesh, ctx);
  
     panel_print(window, &sesh->renderer);
     panel_free(window);
@@ -353,40 +379,11 @@ static int cmd_equity(Session* sesh, int argc, char** argv) {
     op_ensure_board(sesh);
 
     Context ctx = get_context(sesh);
-    TextPanel* window = make_scalarfield_window(ctx, &sesh->renderer);
+    TextPanel* window = make_layout(sesh, ctx);
 
     panel_print(window, &sesh->renderer);
     panel_free(window);
 
-    return CMD_OK;
-}
-
-static int cmd_layout(Session* sesh, int argc, char** argv) {
-    (void)argc; (void)argv;
-
-    op_ensure_hero(sesh);
-    op_ensure_board(sesh);
-
-    TextPanel* layout = NULL;
-
-    for (int i = 0; i < sesh->street_count; i++) {
-        Context hero_ctx = get_context(sesh);
-        Context villain_ctx = get_vcontext(sesh);
-
-        TextPanel* hero_pov    = make_rangefield_window(hero_ctx, &sesh->renderer);
-        TextPanel* h_equity    = make_scalarfield_window(hero_ctx, &sesh->renderer);
-        TextPanel* h_joined    = panel_join_consume(hero_pov, h_equity, 2);
-
-        TextPanel* villain_pov = make_rangefield_window(villain_ctx, &sesh->renderer);
-        TextPanel* v_equity    = make_scalarfield_window(villain_ctx, &sesh->renderer);
-        TextPanel* v_joined    = panel_join_consume(villain_pov, v_equity, 2);
-
-        TextPanel* combined    = panel_stack_consume(h_joined, v_joined, 1);
-        layout = (layout == NULL) ? combined : panel_join_consume(layout, combined, 2);
-    }
-
-    panel_print(layout, &sesh->renderer);
-    panel_free(layout);
     return CMD_OK;
 }
 
@@ -414,7 +411,7 @@ static const Command session_cmds[] = {
 	{ "deal",    'd', "deal",                        "deal hero hand randomly from deck",                     cmd_deal           },
 	{ "undodeal",'u', "undodeal",                    "undo last deal action",                                 cmd_undodeal       },
 	{ "street",  's', "street",                      "deal next community street from deck",                  cmd_street         },
-    { "bomb",    'b', "bomb",                        "deal bomb pot (players and flop)",                      cmd_bomb           },
+    { "bomb",    'B', "bomb",                        "deal bomb pot (players and flop)",                      cmd_bomb           },
 
 	{ "print hero",    'h', "print hero",    "print hero hand",      cmd_hero    },
 	{ "print villain", 'V', "print villain", "print villain hand",   cmd_villain },
@@ -424,7 +421,6 @@ static const Command session_cmds[] = {
 	{ "render",  'R', "render [unicode|ascii|1|2|4|state|purity|draw|suit|flush|equity|joint]", "get/set renderer (symset, width, mode)", cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
 	{ "equity",   'e', "equity",                        "build equity ScalarField vs hero + board",               cmd_equity         },
-	{ "layout",   'l', "layout",                       "multi-street rangefield view (hero above villain, streets side by side)", cmd_layout },
 	{ "reset",   'c', "reset",                       "clear all session state (deck, range)",                 cmd_reset          },
 	{ "help",    '?', "help",                        "print this command list",                               cmd_help           },
 	{ "quit",    'q', "quit",                        "exit session",                                          cmd_quit           },
