@@ -24,24 +24,24 @@ void test_render(void) {
 
     render_heading(&write, "default renderer");
 
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
 
 	printf("\n");
     render_heading(&write, "symset unicode");
     write.symset = SYMSET_UNICODE;
 
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
     render_blank(&write);
     write.symset = SYMSET_ASCII;
     write.mode = RENDER_PURITY;
 
     render_heading(&write, "render mode: purity");
 
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
     render_blank(&write);
 
     write.symset = SYMSET_UNICODE;
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
 
     render_blank(&write);
 
@@ -49,11 +49,11 @@ void test_render(void) {
     write.symset = SYMSET_ASCII;
     write.mode = RENDER_DRAW;
 
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
     render_blank(&write);
 
     write.symset = SYMSET_UNICODE;
-    VPRINT(views_rangefield(&write, &rdata), &write);
+    VPRINT(views_rangefield(&write, &rdata, NULL), &write);
 
 #undef VPRINT
 }

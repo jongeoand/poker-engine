@@ -193,7 +193,7 @@ void test_handmap(void) {
 
 		Renderer ren8 = render_default();
 		ren8.mode = RENDER_STATE; ren8.symset = SYMSET_ASCII; ren8.width = CELL_1;
-		TextPanel* p8 = views_rangefield(&ren8, &rf);
+		TextPanel* p8 = views_rangefield(&ren8, &rf, NULL);
 
 		// CELL_1: each cell is 2 chars (symbol + space). Col 0 at byte 0, col 1 at byte 2.
 		bool lines_ok = (panel_height(p8) == 13);
@@ -234,31 +234,31 @@ void test_handmap(void) {
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_PURITY  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_PURITY; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_PURITY  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_PURITY; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_DRAW  SYMSET_ASCII  CELL_1:\n");
 		disp.mode = RENDER_DRAW; disp.symset = SYMSET_ASCII; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_DRAW  SYMSET_UNICODE  CELL_1:\n");
 		disp.mode = RENDER_DRAW; disp.symset = SYMSET_UNICODE; disp.width = CELL_1;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 		printf("views_rangefield  RENDER_STATE  SYMSET_ASCII  CELL_2:\n");
 		disp.mode = RENDER_STATE; disp.symset = SYMSET_ASCII; disp.width = CELL_2;
-		VPRINT(views_rangefield(&disp, &rf), &disp); printf("\n");
+		VPRINT(views_rangefield(&disp, &rf, NULL), &disp); printf("\n");
 
 #undef VPRINT
 	}

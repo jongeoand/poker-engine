@@ -375,7 +375,7 @@ void test_panel(void) {
         HandTypeRange full = htr_full();
         RangeField rf1 = hmap_build(&full, dead1, g1.board, bitmask1);
 
-        TextPanel* p1 = views_rangefield(&r, &rf1);
+        TextPanel* p1 = views_rangefield(&r, &rf1, NULL);
         printf("Flop 1 rangefield:\n");
         panel_print(p1, &r);
         printf("\n");
@@ -392,7 +392,7 @@ void test_panel(void) {
         uint64_t dead2    = bitmask2 | g2.board;
 
         RangeField rf2 = hmap_build(&full, dead2, g2.board, bitmask2);
-        TextPanel* p2 = views_rangefield(&r, &rf2);
+        TextPanel* p2 = views_rangefield(&r, &rf2, NULL);
 
         /* Join and display */
         TextPanel* joined = panel_join_consume(p1, p2, 2);
