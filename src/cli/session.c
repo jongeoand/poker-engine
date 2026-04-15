@@ -107,6 +107,21 @@ int op_dealbomb(Session* s) {
     return CMD_OK;
 }
 
+int op_dealthru(Session* s) {
+    op_ensure_hero(s);
+    op_ensure_board(s);
+   
+    s->street_boards[s->street_count++] = s->game.board;
+
+    for (int street = 1; street < 3; street++) {
+        deal_street(&s->game);
+        s->street_boards[s->street_count++] = s->game.board;
+    }
+    
+    s->last_cards_dealt = s->street_boards[s->street_count];
+    return CMD_OK;
+}
+
 int op_undo(Session* s) {
     if (!s->has_hero || s->last_cards_dealt == 0) return CMD_ERR;
     if (s->has_board) {
@@ -316,31 +331,6 @@ static int cmd_board(Session* sesh, int argc, char** argv) {
     return CMD_OK;
 }
 
-static int cmd_combostream(Session* sesh, int argc, char** argv) {
-    (void)argc; (void)argv;
-    op_ensure_hero(sesh);
-    op_ensure_board(sesh);
-
-    Context ctx = get_context(sesh);
-    HtrComboStream stream;
-    HandTypeRange full = htr_full();
-    combostream_init(&stream, &full, ctx.dead);
-
-    Combo current;
-    while (combostream_next(&stream, &current)) {
-        op_assignvillain(sesh, current);
-        
-        Context ctx = get_vcontext(sesh);
-        TextPanel* view = make_layout(sesh, ctx);
-
-        panel_print(view, &sesh->renderer);
-        panel_free(view);
-
-        render_blank(&sesh->renderer);
-    }
-    return CMD_OK;
-}
-
 static const char* mode_name(RenderMode m) {
     switch (m) {
     case RENDER_STATE:      return "state";
@@ -371,9 +361,11 @@ static int cmd_render_settings(Session* sesh, int argc, char** argv) {
         const char* a = argv[i];
         if      (strcmp(a, "unicode")     == 0) sesh->renderer.symset = SYMSET_UNICODE;
         else if (strcmp(a, "ascii")       == 0) sesh->renderer.symset = SYMSET_ASCII;
+
         else if (strcmp(a, "1")           == 0) sesh->renderer.width  = CELL_1;
         else if (strcmp(a, "2")           == 0) sesh->renderer.width  = CELL_2;
         else if (strcmp(a, "4")           == 0) sesh->renderer.width  = CELL_4;
+
         else if (strcmp(a, "state")       == 0) sesh->renderer.mode   = RENDER_STATE;
         else if (strcmp(a, "purity")      == 0) sesh->renderer.mode   = RENDER_PURITY;
         else if (strcmp(a, "draw")        == 0) sesh->renderer.mode   = RENDER_DRAW;
@@ -449,7 +441,6 @@ static const Command session_cmds[] = {
 	{ "print villain", 'V', "print villain", "print villain hand",   cmd_villain },
 	{ "print board",   'b', "print board",   "print cards on board", cmd_board   },
 
-    { "stream",  'v', "stream",                       "stream all villain combos vs hero + board",             cmd_combostream    },
 	{ "render",  'R', "render [unicode|ascii|1|2|4|state|purity|draw|suit|flush|equity|joint]", "get/set renderer (symset, width, mode)", cmd_render_settings},
 	{ "analyze",  'a', "analyze",                      "build RangeField vs hero + board",                      cmd_analyze        },
 	{ "equity",   'e', "equity",                        "build equity ScalarField vs hero + board",               cmd_equity         },

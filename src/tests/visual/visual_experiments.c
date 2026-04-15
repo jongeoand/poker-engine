@@ -34,6 +34,7 @@ void visual_experiments(void) {
         panel_free(view);
     }
 
+
     /* --- Experiment 2: all hero combos against a fixed board --- */
     {
         render_heading(&r, "Experiment 2");
@@ -133,4 +134,5 @@ void visual_experiments(void) {
             render_blank(&r);
         }
     }
+    
 }
