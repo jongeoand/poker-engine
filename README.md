@@ -3,7 +3,7 @@
 A poker study tool for range analysis and strategic exploration, written in C with no external dependencies.
 
 This project focuses on making the structural math of poker visible: how ranges interact, how equity shifts across streets, and where strategic pressure emerges.
-The end goal is to create a tool for visualizing the math that informs strategic decision making, rather than another GTO counterfactual regret solver.:
+The end goal is to create a tool for visualizing the math that informs strategic decision making, rather than another GTO counterfactual regret solver.
 
 ![CLI Screenshot](docs/poker-engine-session.png)
 
