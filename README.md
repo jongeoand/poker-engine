@@ -27,6 +27,7 @@ These maps make it easier to reason about bluffing regions, thin value opportuni
 Categorical mapping has been implemented, and some early work on scalar equity maps has been done.
 No code exists yet for pressure, volatility, transition or frontier maps yet.
 
+My long term goals with this project are to make an interactive tool / CLI environment to study exploitative strategy implications. My vision is a free tool that poker players currently pay subscription services for.
 ## Current status
 
 The mathematical core of the engine is largely implemented:
@@ -41,6 +42,8 @@ The mathematical core of the engine is largely implemented:
 Active development is focused on the CLI layer — the interactive session, panel-based layout engine, and multi-view analysis output. The panel system was recently implemented and will support richer dashboards combining hand maps, summaries, transition reports, and debug views. Not everything is wired up yet; there is some basic panel integration with interactive sessions, but it is not yet complete.
 
 Another area of active development is implementing more mapping and symbolic representations for the visual grammar of the CLI.
+
+The current state is basically an interactive test of all the currently implemented features, but requires more testing and thought about the ways different commands are combined. Development is still very early stages.
 
 ## Build
 
@@ -90,7 +93,7 @@ The project represents hand space as a structured lattice of 169 hand types. Ana
 
 Operators on these fields expose structure: frontier detection (boundaries between strategic regions), transition analysis (equity shifts as new cards arrive), aggregation, and difference maps for comparing lines or board textures.
 
-The goal is a geometric view of range interaction, not just scalar metrics.
+The goal is a geometric view of range interaction, rather than just scalar metrics. 
 
 ## Design characteristics
 
@@ -109,7 +112,7 @@ The goal is a geometric view of range interaction, not just scalar metrics.
 
 ## Non-goals
 
-This project is not attempting to compute Nash equilibria, replace solver software, or provide precomputed strategy charts. The focus is on understanding structure: why certain strategies apply, how ranges interact, where equity shifts occur.
+This project is not attempting to compute Nash equilibria, replace solver software, or provide precomputed strategy charts.
 
 ---
 
