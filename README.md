@@ -1,13 +1,14 @@
 # Poker Engine - in development
 
-A poker study tool for range analysis and strategic exploration, written in C with no external dependencies.
-
-This project focuses on making the structural math of poker visible: how ranges interact, how equity shifts across streets, and where strategic pressure emerges.
-The end goal is to create a tool for visualizing the math that informs strategic decision making, rather than another GTO counterfactual regret solver.
+A systems-oriented C library for modeling and analyzing combinatorics.
 
 ![Demo Screenshot](./docs/demo_a.png)
 
 ![Demo Screenshot](./docs/demo_b.png)
+
+This project focuses on making the structural math of poker visible: how ranges interact, how equity shifts across streets, and where strategic pressure emerges. Most poker tools focus on simulation or gameplay - here, the focus is on representation and analysis.
+
+The end goal is to create a tool for visualizing the math that informs strategic decision making, rather than another GTO counterfactual regret solver.
 
 ## Project direction
 
@@ -27,17 +28,15 @@ These maps make it easier to reason about bluffing regions, thin value opportuni
 Categorical mapping has been implemented, and some early work on scalar equity maps has been done.
 No code exists yet for pressure, volatility, transition or frontier maps yet.
 
-My long term goals with this project are to make an interactive tool / CLI environment to study exploitative strategy implications. My vision is a free tool that poker players currently pay subscription services for.
 ## Current status
 
 The mathematical core of the engine is largely implemented:
 
-- exact hand evaluation
-- draw classification
-- equity computation (exact and Monte Carlo)
-- range representation and traversal
-- combo-state classification
-- hand lattice mapping
+- Represents all 1,326 starting hand combinations using compact bitsets
+- Supports set operations on hand ranges
+- Evaluates hand strength and draw classification
+- Computes equity (Montecarlo) and analyzes how ranges evolve on different streets 
+- Produces structured outputs (matrices, distributions, state summaries)
 
 Active development is focused on the CLI layer — the interactive session, panel-based layout engine, and multi-view analysis output. The panel system was recently implemented and will support richer dashboards combining hand maps, summaries, transition reports, and debug views. Not everything is wired up yet; there is some basic panel integration with interactive sessions, but it is not yet complete.
 
