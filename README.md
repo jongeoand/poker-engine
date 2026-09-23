@@ -113,4 +113,4 @@ This project is not attempting to compute Nash equilibria, replace solver softwa
 
 ---
 
-*This is an ongoing personal project under active development. Interfaces and outputs are still evolving, particularly in the CLI layer.*
+*This is an ongoing personal project. Development paused for the meantime. Interfaces and outputs are still evolving, particularly in the CLI layer.*
